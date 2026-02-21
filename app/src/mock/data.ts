@@ -1,0 +1,532 @@
+import type { User, Course, Lesson, CourseProgress, Quiz, DiscussionMessage, Recommendation, StudentAnalytics, CourseAnalytics, PlatformAnalytics, SkillMastery } from '@/types';
+
+// Mock Users
+export const mockUsers: User[] = [
+  {
+    id: '1',
+    email: 'student@learnflux.com',
+    name: 'Alex Johnson',
+    role: 'student',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    createdAt: '2024-01-15T10:00:00Z',
+    lastActive: '2024-02-18T08:30:00Z',
+    isActive: true,
+  },
+  {
+    id: '2',
+    email: 'instructor@learnflux.com',
+    name: 'Dr. Sarah Chen',
+    role: 'instructor',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    createdAt: '2023-08-20T14:00:00Z',
+    lastActive: '2024-02-18T09:15:00Z',
+    isActive: true,
+  },
+  {
+    id: '3',
+    email: 'admin@learnflux.com',
+    name: 'Michael Roberts',
+    role: 'admin',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Michael',
+    createdAt: '2023-06-10T09:00:00Z',
+    lastActive: '2024-02-18T10:00:00Z',
+    isActive: true,
+  },
+  {
+    id: '4',
+    email: 'emma@learnflux.com',
+    name: 'Emma Williams',
+    role: 'student',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
+    createdAt: '2024-01-20T11:30:00Z',
+    lastActive: '2024-02-17T16:45:00Z',
+    isActive: true,
+  },
+  {
+    id: '5',
+    email: 'david@learnflux.com',
+    name: 'David Park',
+    role: 'instructor',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=David',
+    createdAt: '2023-10-05T13:20:00Z',
+    lastActive: '2024-02-18T07:50:00Z',
+    isActive: true,
+  },
+];
+
+// Mock Courses
+export const mockCourses: Course[] = [
+  {
+    id: 'c1',
+    title: 'Advanced Machine Learning',
+    description: 'Master machine learning algorithms, neural networks, and deep learning techniques with hands-on projects.',
+    instructorId: '2',
+    instructorName: 'Dr. Sarah Chen',
+    thumbnail: 'https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=800&q=80',
+    category: 'Data Science',
+    skillTags: ['Python', 'TensorFlow', 'Neural Networks', 'Deep Learning'],
+    difficulty: 'advanced',
+    duration: 1800,
+    lessonsCount: 24,
+    enrolledStudents: 1250,
+    rating: 4.8,
+    isPublished: true,
+    createdAt: '2023-09-15T10:00:00Z',
+    price: 89.99,
+  },
+  {
+    id: 'c2',
+    title: 'Web Development Bootcamp',
+    description: 'Complete guide to modern web development with React, Node.js, and cloud deployment.',
+    instructorId: '5',
+    instructorName: 'David Park',
+    thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800&q=80',
+    category: 'Web Development',
+    skillTags: ['React', 'Node.js', 'TypeScript', 'AWS'],
+    difficulty: 'intermediate',
+    duration: 2400,
+    lessonsCount: 36,
+    enrolledStudents: 2100,
+    rating: 4.9,
+    isPublished: true,
+    createdAt: '2023-11-01T14:30:00Z',
+    price: 79.99,
+  },
+  {
+    id: 'c3',
+    title: 'Data Structures & Algorithms',
+    description: 'Comprehensive course on fundamental data structures and algorithms for coding interviews.',
+    instructorId: '2',
+    instructorName: 'Dr. Sarah Chen',
+    thumbnail: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=800&q=80',
+    category: 'Computer Science',
+    skillTags: ['Algorithms', 'Data Structures', 'Problem Solving', 'Python'],
+    difficulty: 'intermediate',
+    duration: 1500,
+    lessonsCount: 20,
+    enrolledStudents: 3200,
+    rating: 4.7,
+    isPublished: true,
+    createdAt: '2023-08-10T09:00:00Z',
+    price: 69.99,
+  },
+  {
+    id: 'c4',
+    title: 'UI/UX Design Fundamentals',
+    description: 'Learn the principles of user interface and user experience design with practical projects.',
+    instructorId: '5',
+    instructorName: 'David Park',
+    thumbnail: 'https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80',
+    category: 'Design',
+    skillTags: ['Figma', 'User Research', 'Prototyping', 'Design Systems'],
+    difficulty: 'beginner',
+    duration: 1200,
+    lessonsCount: 18,
+    enrolledStudents: 1500,
+    rating: 4.6,
+    isPublished: true,
+    createdAt: '2023-12-01T11:00:00Z',
+    price: 59.99,
+  },
+  {
+    id: 'c5',
+    title: 'Cloud Computing with AWS',
+    description: 'Master AWS services, serverless architecture, and cloud infrastructure management.',
+    instructorId: '2',
+    instructorName: 'Dr. Sarah Chen',
+    thumbnail: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80',
+    category: 'Cloud Computing',
+    skillTags: ['AWS', 'Serverless', 'Docker', 'Kubernetes'],
+    difficulty: 'advanced',
+    duration: 1600,
+    lessonsCount: 22,
+    enrolledStudents: 980,
+    rating: 4.8,
+    isPublished: true,
+    createdAt: '2024-01-10T10:30:00Z',
+    price: 99.99,
+  },
+  {
+    id: 'c6',
+    title: 'Mobile App Development',
+    description: 'Build cross-platform mobile applications using React Native and modern mobile frameworks.',
+    instructorId: '5',
+    instructorName: 'David Park',
+    thumbnail: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=800&q=80',
+    category: 'Mobile Development',
+    skillTags: ['React Native', 'iOS', 'Android', 'Mobile UI'],
+    difficulty: 'intermediate',
+    duration: 1400,
+    lessonsCount: 19,
+    enrolledStudents: 1100,
+    rating: 4.5,
+    isPublished: false,
+    createdAt: '2024-02-01T09:00:00Z',
+    price: 74.99,
+  },
+];
+
+// Mock Lessons
+export const mockLessons: Lesson[] = [
+  // Machine Learning Course Lessons
+  {
+    id: 'l1',
+    courseId: 'c1',
+    title: 'Introduction to Machine Learning',
+    description: 'Overview of machine learning concepts, types, and applications.',
+    duration: 45,
+    order: 1,
+    resources: [
+      { id: 'r1', name: 'ML Cheatsheet', type: 'pdf', url: '#' },
+      { id: 'r2', name: 'Sample Dataset', type: 'code', url: '#' },
+    ],
+    isCompleted: true,
+  },
+  {
+    id: 'l2',
+    courseId: 'c1',
+    title: 'Supervised Learning Basics',
+    description: 'Understanding classification and regression algorithms.',
+    duration: 60,
+    order: 2,
+    resources: [
+      { id: 'r3', name: 'Algorithm Comparison', type: 'pdf', url: '#' },
+    ],
+    isCompleted: true,
+  },
+  {
+    id: 'l3',
+    courseId: 'c1',
+    title: 'Neural Networks Fundamentals',
+    description: 'Building your first neural network from scratch.',
+    duration: 75,
+    order: 3,
+    resources: [
+      { id: 'r4', name: 'Neural Network Visualization', type: 'link', url: '#' },
+      { id: 'r5', name: 'Practice Notebook', type: 'code', url: '#' },
+    ],
+    isCompleted: false,
+  },
+  {
+    id: 'l4',
+    courseId: 'c1',
+    title: 'Deep Learning with TensorFlow',
+    description: 'Implementing deep learning models using TensorFlow 2.0.',
+    duration: 90,
+    order: 4,
+    resources: [
+      { id: 'r6', name: 'TensorFlow Guide', type: 'pdf', url: '#' },
+    ],
+    isCompleted: false,
+  },
+  // Web Development Lessons
+  {
+    id: 'l5',
+    courseId: 'c2',
+    title: 'React Fundamentals',
+    description: 'Building modern UIs with React hooks and components.',
+    duration: 55,
+    order: 1,
+    resources: [
+      { id: 'r7', name: 'React Documentation', type: 'link', url: '#' },
+    ],
+    isCompleted: true,
+  },
+  {
+    id: 'l6',
+    courseId: 'c2',
+    title: 'State Management with Redux',
+    description: 'Managing complex application state effectively.',
+    duration: 65,
+    order: 2,
+    resources: [
+      { id: 'r8', name: 'Redux Toolkit Guide', type: 'pdf', url: '#' },
+    ],
+    isCompleted: false,
+  },
+];
+
+// Mock Course Progress
+export const mockCourseProgress: CourseProgress[] = [
+  {
+    courseId: 'c1',
+    studentId: '1',
+    completedLessons: ['l1', 'l2'],
+    totalLessons: 24,
+    completionPercentage: 8,
+    lastAccessed: '2024-02-18T08:30:00Z',
+    timeSpent: 180,
+  },
+  {
+    courseId: 'c2',
+    studentId: '1',
+    completedLessons: ['l5'],
+    totalLessons: 36,
+    completionPercentage: 3,
+    lastAccessed: '2024-02-17T16:00:00Z',
+    timeSpent: 55,
+  },
+  {
+    courseId: 'c3',
+    studentId: '1',
+    completedLessons: [],
+    totalLessons: 20,
+    completionPercentage: 0,
+    lastAccessed: '2024-02-10T10:00:00Z',
+    timeSpent: 0,
+  },
+];
+
+// Mock Quizzes
+export const mockQuizzes: Quiz[] = [
+  {
+    id: 'q1',
+    lessonId: 'l1',
+    courseId: 'c1',
+    title: 'ML Basics Quiz',
+    timeLimit: 15,
+    passingScore: 70,
+    questions: [
+      {
+        id: 'qq1',
+        type: 'multiple_choice',
+        question: 'Which of the following is a type of supervised learning?',
+        options: ['Clustering', 'Classification', 'Dimensionality Reduction', 'Association'],
+        correctAnswer: 1,
+        explanation: 'Classification is a supervised learning task where the model learns to predict discrete class labels.',
+        difficulty: 'easy',
+        skillMapped: 'Machine Learning Fundamentals',
+      },
+      {
+        id: 'qq2',
+        type: 'multiple_choice',
+        question: 'What is the primary goal of regression?',
+        options: ['Predict continuous values', 'Group similar data points', 'Reduce feature dimensions', 'Find associations'],
+        correctAnswer: 0,
+        explanation: 'Regression aims to predict continuous numerical values based on input features.',
+        difficulty: 'easy',
+        skillMapped: 'Machine Learning Fundamentals',
+      },
+      {
+        id: 'qq3',
+        type: 'multiple_choice',
+        question: 'Which algorithm is commonly used for classification?',
+        options: ['K-Means', 'Linear Regression', 'Logistic Regression', 'PCA'],
+        correctAnswer: 2,
+        explanation: 'Logistic Regression is a classification algorithm despite its name.',
+        difficulty: 'medium',
+        skillMapped: 'Classification Algorithms',
+      },
+    ],
+  },
+  {
+    id: 'q2',
+    lessonId: 'l5',
+    courseId: 'c2',
+    title: 'React Fundamentals Quiz',
+    timeLimit: 20,
+    passingScore: 75,
+    questions: [
+      {
+        id: 'qq4',
+        type: 'multiple_choice',
+        question: 'What is the purpose of useState hook?',
+        options: ['Handle side effects', 'Manage component state', 'Optimize performance', 'Handle routing'],
+        correctAnswer: 1,
+        explanation: 'useState is a React hook that allows functional components to manage local state.',
+        difficulty: 'easy',
+        skillMapped: 'React Hooks',
+      },
+      {
+        id: 'qq5',
+        type: 'multiple_choice',
+        question: 'Which hook is used for side effects in React?',
+        options: ['useState', 'useEffect', 'useContext', 'useReducer'],
+        correctAnswer: 1,
+        explanation: 'useEffect is designed to handle side effects like data fetching, subscriptions, or DOM manipulation.',
+        difficulty: 'easy',
+        skillMapped: 'React Hooks',
+      },
+    ],
+  },
+];
+
+// Mock Discussion Messages
+export const mockDiscussionMessages: DiscussionMessage[] = [
+  {
+    id: 'd1',
+    courseId: 'c1',
+    userId: '1',
+    userName: 'Alex Johnson',
+    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    message: 'Can someone explain the difference between bias and variance in machine learning?',
+    timestamp: '2024-02-18T08:00:00Z',
+  },
+  {
+    id: 'd2',
+    courseId: 'c1',
+    userId: '4',
+    userName: 'Emma Williams',
+    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
+    message: 'Bias is the error from erroneous assumptions, while variance is error from sensitivity to small fluctuations in training set.',
+    timestamp: '2024-02-18T08:15:00Z',
+  },
+  {
+    id: 'd3',
+    courseId: 'c1',
+    userId: '2',
+    userName: 'Dr. Sarah Chen',
+    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
+    message: 'Great explanation Emma! The bias-variance tradeoff is crucial for building robust models.',
+    timestamp: '2024-02-18T08:30:00Z',
+  },
+  {
+    id: 'd4',
+    courseId: 'c2',
+    userId: '1',
+    userName: 'Alex Johnson',
+    userAvatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
+    message: 'When should I use useCallback vs useMemo?',
+    timestamp: '2024-02-17T16:30:00Z',
+  },
+];
+
+// Mock Recommendations
+export const mockRecommendations: Recommendation[] = [
+  {
+    id: 'rec1',
+    type: 'lesson',
+    title: 'Neural Networks Fundamentals',
+    description: 'Continue your learning journey with neural networks basics.',
+    reason: 'Based on your progress in Machine Learning course',
+    priority: 1,
+    relatedSkills: ['Neural Networks', 'Deep Learning'],
+  },
+  {
+    id: 'rec2',
+    type: 'practice',
+    title: 'Algorithm Practice: Sorting',
+    description: 'Strengthen your understanding of sorting algorithms.',
+    reason: 'Weak topic identified in your skill assessment',
+    priority: 2,
+    relatedSkills: ['Algorithms', 'Data Structures'],
+  },
+  {
+    id: 'rec3',
+    type: 'course',
+    title: 'Data Structures & Algorithms',
+    description: 'Comprehensive course to improve your algorithmic thinking.',
+    reason: 'Recommended for your career path in software engineering',
+    priority: 3,
+    relatedSkills: ['Algorithms', 'Problem Solving'],
+  },
+];
+
+// Mock Skill Mastery Data
+export const mockSkillMastery: SkillMastery[] = [
+  { skill: 'Python', level: 85, category: 'Programming' },
+  { skill: 'Machine Learning', level: 65, category: 'Data Science' },
+  { skill: 'React', level: 70, category: 'Web Development' },
+  { skill: 'Algorithms', level: 45, category: 'Computer Science' },
+  { skill: 'Data Structures', level: 50, category: 'Computer Science' },
+  { skill: 'SQL', level: 60, category: 'Data Science' },
+];
+
+// Mock Student Analytics
+export const mockStudentAnalytics: StudentAnalytics = {
+  studentId: '1',
+  totalTimeSpent: 7200,
+  coursesCompleted: 0,
+  averageScore: 78,
+  streakDays: 12,
+  weeklyStudyHours: [5, 8, 6, 7, 4, 9, 6],
+  skillMastery: mockSkillMastery,
+  weakTopics: ['Algorithms', 'Data Structures', 'System Design'],
+};
+
+// Mock Course Analytics
+export const mockCourseAnalytics: CourseAnalytics[] = [
+  {
+    courseId: 'c1',
+    totalStudents: 1250,
+    averageCompletion: 68,
+    averageScore: 82,
+    dropOffLessons: [
+      { lessonId: 'l3', dropOffRate: 25 },
+      { lessonId: 'l5', dropOffRate: 18 },
+    ],
+    engagementOverTime: [
+      { date: '2024-01', activeStudents: 800 },
+      { date: '2024-02', activeStudents: 950 },
+    ],
+  },
+  {
+    courseId: 'c2',
+    totalStudents: 2100,
+    averageCompletion: 72,
+    averageScore: 85,
+    dropOffLessons: [
+      { lessonId: 'l6', dropOffRate: 20 },
+      { lessonId: 'l8', dropOffRate: 15 },
+    ],
+    engagementOverTime: [
+      { date: '2024-01', activeStudents: 1500 },
+      { date: '2024-02', activeStudents: 1800 },
+    ],
+  },
+];
+
+// Mock Platform Analytics
+export const mockPlatformAnalytics: PlatformAnalytics = {
+  totalUsers: 8500,
+  activeStudents: 4200,
+  totalCourses: 45,
+  coursesPublished: 38,
+  dailyActiveUsers: [
+    { date: 'Mon', count: 3200 },
+    { date: 'Tue', count: 3500 },
+    { date: 'Wed', count: 3800 },
+    { date: 'Thu', count: 3400 },
+    { date: 'Fri', count: 3600 },
+    { date: 'Sat', count: 2800 },
+    { date: 'Sun', count: 2600 },
+  ],
+  coursePopularity: [
+    { courseId: 'c3', enrollments: 3200 },
+    { courseId: 'c2', enrollments: 2100 },
+    { courseId: 'c4', enrollments: 1500 },
+    { courseId: 'c1', enrollments: 1250 },
+    { courseId: 'c5', enrollments: 980 },
+  ],
+  trafficData: [
+    { date: 'Week 1', visits: 15000, uniqueVisitors: 8000 },
+    { date: 'Week 2', visits: 18000, uniqueVisitors: 9500 },
+    { date: 'Week 3', visits: 16500, uniqueVisitors: 8800 },
+    { date: 'Week 4', visits: 21000, uniqueVisitors: 11000 },
+  ],
+};
+
+// Mock Notifications
+export const mockNotifications = [
+  {
+    id: 'n1',
+    title: 'New Recommendation',
+    message: 'A new lesson has been recommended based on your progress.',
+    timestamp: '2024-02-18T09:00:00Z',
+    read: false,
+  },
+  {
+    id: 'n2',
+    title: 'Quiz Completed',
+    message: 'You scored 85% on the ML Basics Quiz!',
+    timestamp: '2024-02-17T14:30:00Z',
+    read: true,
+  },
+  {
+    id: 'n3',
+    title: 'Streak Milestone',
+    message: 'Congratulations! You have a 12-day learning streak!',
+    timestamp: '2024-02-16T10:00:00Z',
+    read: true,
+  },
+];

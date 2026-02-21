@@ -1,0 +1,8 @@
+export { StudentDashboard } from './StudentDashboard';
+export { MyCoursesPage } from './MyCoursesPage';
+export { RecommendationsPage } from './RecommendationsPage';
+export { ProgressPage } from './ProgressPage';
+export { DiscussionsPage } from './DiscussionsPage';
+export { SettingsPage } from './SettingsPage';
+export { LessonPage } from './LessonPage';
+export { QuizPage } from './QuizPage';

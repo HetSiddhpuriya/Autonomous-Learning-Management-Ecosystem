@@ -1,0 +1,62 @@
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import mongoose from 'mongoose';
+
+// Route imports
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import courseRoutes from './routes/courses.js';
+import lessonRoutes from './routes/lessons.js';
+import quizRoutes from './routes/quizzes.js';
+import progressRoutes from './routes/progress.js';
+import discussionRoutes from './routes/discussions.js';
+import analyticsRoutes from './routes/analytics.js';
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/lms';
+
+// ─── Middleware ─────────────────────────────────────────────────────────────
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// ─── Health Check ───────────────────────────────────────────────────────────
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected' });
+});
+
+// ─── Routes ─────────────────────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/discussions', discussionRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
+// ─── Global Error Handler ────────────────────────────────────────────────────
+app.use((err, _req, res, _next) => {
+  console.error('❌ Error:', err.message);
+  res.status(err.status || 500).json({ message: err.message || 'Internal Server Error' });
+});
+
+// ─── MongoDB + Server Startup ────────────────────────────────────────────────
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    console.log(`✅ MongoDB connected: ${MONGO_URI}`);
+    app.listen(PORT, () => {
+      console.log(`🚀 LMS API Server running on http://localhost:${PORT}`);
+      console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection failed:', err.message);
+    process.exit(1);
+  });
+
