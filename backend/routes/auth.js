@@ -10,7 +10,7 @@ const generateToken = (id) =>
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
     try {
-        const { name, email, password, role = 'student' } = req.body;
+        const { name, email, password, role = 'student', phone, gender } = req.body;
 
         if (!name || !email || !password)
             return res.status(400).json({ message: 'Name, email, and password are required' });
@@ -19,7 +19,7 @@ router.post('/register', async (req, res) => {
         if (existing)
             return res.status(400).json({ message: 'Email already in use' });
 
-        const user = await User.create({ name, email, password, role });
+        const user = await User.create({ name, email, password, role, phone, gender });
         const token = generateToken(user._id);
 
         res.status(201).json({ token, user });

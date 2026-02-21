@@ -7,6 +7,9 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },
     avatar: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    gender: { type: String, default: '' },
+    bio: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
     lastActive: { type: Date, default: Date.now },
 }, { timestamps: true });

@@ -7,7 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
+  register: (name: string, email: string, password: string, role: UserRole, phone?: string, gender?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
@@ -49,10 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Register ──────────────────────────────────────────────────────────────
-  const register = useCallback(async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
+  const register = useCallback(async (name: string, email: string, password: string, role: UserRole, phone?: string, gender?: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const { data } = await api.post('/auth/register', { name, email, password, role });
+      const { data } = await api.post('/auth/register', { name, email, password, role, phone, gender });
       localStorage.setItem('lms_token', data.token);
       setUser(data.user);
       return true;
