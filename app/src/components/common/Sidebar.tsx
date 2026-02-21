@@ -45,6 +45,7 @@ const instructorNavItems: NavItem[] = [
   { label: 'Question Bank', href: '/instructor/questions', icon: FileQuestion },
   { label: 'Students', href: '/instructor/students', icon: Users },
   { label: 'Analytics', href: '/instructor/analytics', icon: BarChart3 },
+  { label: 'Settings', href: '/instructor/settings', icon: Settings },
 ];
 
 const adminNavItems: NavItem[] = [

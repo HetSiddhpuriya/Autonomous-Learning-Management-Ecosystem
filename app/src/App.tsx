@@ -77,6 +77,7 @@ function App() {
                 <Route path="/instructor/questions" element={<QuestionBankPage />} />
                 <Route path="/instructor/students" element={<StudentsPage />} />
                 <Route path="/instructor/analytics" element={<AnalyticsPage />} />
+                <Route path="/instructor/settings" element={<SettingsPage />} />
               </Route>
 
               {/* Admin Routes */}
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/admin/users" element={<UsersPage />} />
                 <Route path="/admin/courses" element={<CoursesPage />} />
                 <Route path="/admin/analytics" element={<PlatformAnalyticsPage />} />
+                <Route path="/admin/settings" element={<SettingsPage />} />
               </Route>
 
               {/* Fallback */}

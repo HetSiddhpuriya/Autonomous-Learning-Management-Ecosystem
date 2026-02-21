@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChartCard } from '@/components/common/ChartCard';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { mockCourses, mockCourseAnalytics } from '@/mock/data';
+import api from '@/lib/api';
+import type { Course } from '@/types';
 import {
   BarChart,
   Bar,
@@ -35,8 +36,28 @@ export function AnalyticsPage() {
   const [selectedCourse, setSelectedCourse] = useState('all');
   const [timeRange, setTimeRange] = useState('30d');
 
-  const myCourses = mockCourses.slice(0, 3);
-  const analytics = mockCourseAnalytics[0];
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [analytics, setAnalytics] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [coursesRes, analyticsRes] = await Promise.all([
+          api.get('/courses/all'),
+          api.get('/analytics/instructor')
+        ]);
+        setMyCourses(coursesRes.data);
+        setAnalytics(analyticsRes.data);
+      } catch (err) {
+        console.error('Failed to fetch analytics data:', err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const totalEnrollments = analytics.reduce((acc, a) => acc + (a.totalStudents || 0), 0) || myCourses.reduce((acc, c) => acc + (c.enrolledStudents || 0), 0);
+  const averageCompletion = analytics.length ? Math.round(analytics.reduce((acc, a) => acc + (a.averageCompletion || 0), 0) / analytics.length) : 0;
+  const averageScore = analytics.length ? Math.round(analytics.reduce((acc, a) => acc + (a.averageScore || 0), 0) / analytics.length) : 0;
 
   // Mock data for charts
   const engagementData = [
@@ -117,8 +138,7 @@ export function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Total Enrollments</p>
-                  <p className="text-2xl font-bold">1,250</p>
-                  <p className="text-xs text-green-600">+12% from last period</p>
+                  <p className="text-2xl font-bold">{totalEnrollments.toLocaleString()}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-primary/10">
                   <Users className="h-5 w-5 text-primary" />
@@ -138,8 +158,7 @@ export function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Completion Rate</p>
-                  <p className="text-2xl font-bold">68%</p>
-                  <p className="text-xs text-green-600">+5% from last period</p>
+                  <p className="text-2xl font-bold">{averageCompletion}%</p>
                 </div>
                 <div className="p-3 rounded-lg bg-green-100 dark:bg-green-900/30">
                   <TrendingUp className="h-5 w-5 text-green-600" />
@@ -180,8 +199,7 @@ export function AnalyticsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Avg. Score</p>
-                  <p className="text-2xl font-bold">82%</p>
-                  <p className="text-xs text-green-600">+3% from last period</p>
+                  <p className="text-2xl font-bold">{averageScore}%</p>
                 </div>
                 <div className="p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30">
                   <Award className="h-5 w-5 text-amber-600" />
@@ -256,33 +274,35 @@ export function AnalyticsPage() {
           description="How students access your courses"
           delay={0.5}
         >
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={deviceData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {deviceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex justify-center gap-6 mt-4">
+          <div className="h-72 flex flex-col pt-4">
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={deviceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {deviceData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 mt-4 pb-2">
               {deviceData.map((entry, index) => (
                 <div key={entry.name} className="flex items-center gap-2">
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="w-3 h-3 rounded-full flex-shrink-0"
                     style={{ backgroundColor: COLORS[index] }}
                   />
-                  <span className="text-sm">{entry.name} ({entry.value}%)</span>
+                  <span className="text-sm truncate">{entry.name} ({entry.value}%)</span>
                 </div>
               ))}
             </div>

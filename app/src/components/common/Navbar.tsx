@@ -190,7 +190,7 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
                     <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <DropdownMenuItem onClick={() => navigate(user ? `/${user.role}/settings` : '/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>

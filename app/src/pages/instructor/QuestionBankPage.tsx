@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockQuizzes, mockCourses } from '@/mock/data';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import {
   Plus,
   Search,
@@ -25,10 +26,39 @@ export function QuestionBankPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState('all');
 
-  const allQuestions = mockQuizzes.flatMap(q => 
-    q.questions.map(question => ({
+  const [myCourses, setMyCourses] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newQuestionData, setNewQuestionData] = useState({
+    courseId: '',
+    difficulty: 'medium',
+    question: '',
+    options: ['', '', '', ''],
+    correctAnswer: 0,
+    skillMapped: '',
+    explanation: ''
+  });
+
+  useEffect(() => {
+    const fetchCoursesAndQuizzes = async () => {
+      try {
+        const [coursesRes, quizzesRes] = await Promise.all([
+          api.get('/courses/all'),
+          api.get('/quizzes') // Note: In production you might want to filter this by instructor's courses backend
+        ]);
+        setMyCourses(coursesRes.data);
+        setQuizzes(quizzesRes.data);
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+      }
+    };
+    fetchCoursesAndQuizzes();
+  }, []);
+
+  const allQuestions = quizzes.flatMap(q =>
+    (q.questions || []).map((question: any) => ({
       ...question,
-      quizId: q.id,
+      quizId: q._id || q.id,
       courseId: q.courseId,
     }))
   );
@@ -97,8 +127,8 @@ export function QuestionBankPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
-            {mockCourses.map(course => (
-              <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+            {myCourses.map(course => (
+              <SelectItem key={course._id || course.id} value={course._id || course.id}>{course.title}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -133,7 +163,7 @@ export function QuestionBankPage() {
             <div className="space-y-4">
               {filteredQuestions.map((question, index) => (
                 <motion.div
-                  key={question.id}
+                  key={question._id || question.id || index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -149,14 +179,13 @@ export function QuestionBankPage() {
                       </div>
                       <p className="font-medium mb-3">{question.question}</p>
                       <div className="grid sm:grid-cols-2 gap-2">
-                        {question.options.map((option, optIndex) => (
+                        {(question.options || []).map((option: string, optIndex: number) => (
                           <div
                             key={optIndex}
-                            className={`flex items-center gap-2 p-2 rounded text-sm ${
-                              optIndex === question.correctAnswer
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                : 'bg-muted'
-                            }`}
+                            className={`flex items-center gap-2 p-2 rounded text-sm ${optIndex === question.correctAnswer
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                              : 'bg-muted'
+                              }`}
                           >
                             {optIndex === question.correctAnswer ? (
                               <CheckCircle2 className="h-4 w-4" />
@@ -208,25 +237,27 @@ export function QuestionBankPage() {
                 className="w-full p-3 rounded-lg border resize-none"
                 rows={3}
                 placeholder="Enter your question"
+                value={newQuestionData.question}
+                onChange={(e) => setNewQuestionData(prev => ({ ...prev, question: e.target.value }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Course *</label>
-                <Select>
+                <Select value={newQuestionData.courseId} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, courseId: v }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select course" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCourses.map(course => (
-                      <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                    {myCourses.map(course => (
+                      <SelectItem key={course._id || course.id} value={course._id || course.id}>{course.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Difficulty *</label>
-                <Select>
+                <Select value={newQuestionData.difficulty} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, difficulty: v }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
@@ -240,19 +271,33 @@ export function QuestionBankPage() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Skill Mapped</label>
-              <Input placeholder="e.g., Machine Learning, React" />
+              <Input
+                placeholder="e.g., Machine Learning, React"
+                value={newQuestionData.skillMapped}
+                onChange={(e) => setNewQuestionData(prev => ({ ...prev, skillMapped: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Options *</label>
               <div className="space-y-2">
-                {[1, 2, 3, 4].map((num) => (
+                {[0, 1, 2, 3].map((num) => (
                   <div key={num} className="flex items-center gap-2">
                     <input
                       type="radio"
                       name="correct"
                       className="w-4 h-4"
+                      checked={newQuestionData.correctAnswer === num}
+                      onChange={() => setNewQuestionData(prev => ({ ...prev, correctAnswer: num }))}
                     />
-                    <Input placeholder={`Option ${num}`} />
+                    <Input
+                      placeholder={`Option ${num + 1}`}
+                      value={newQuestionData.options[num]}
+                      onChange={(e) => {
+                        const newOpts = [...newQuestionData.options];
+                        newOpts[num] = e.target.value;
+                        setNewQuestionData(prev => ({ ...prev, options: newOpts }));
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -266,6 +311,8 @@ export function QuestionBankPage() {
                 className="w-full p-3 rounded-lg border resize-none"
                 rows={2}
                 placeholder="Explain why the correct answer is right"
+                value={newQuestionData.explanation}
+                onChange={(e) => setNewQuestionData(prev => ({ ...prev, explanation: e.target.value }))}
               />
             </div>
             <div className="flex justify-end gap-2">

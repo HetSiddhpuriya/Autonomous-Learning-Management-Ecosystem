@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,11 +37,80 @@ export function SettingsPage() {
     discussions: false,
   });
 
+  const [passwords, setPasswords] = useState({
+    current: '',
+    new: '',
+    confirm: '',
+  });
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    avatar: user?.avatar || '',
+  });
+
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        avatar: user.avatar || '',
+      });
+    }
+  }, [user]);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, avatar: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
+    try {
+      await updateUser({ name: formData.name, email: formData.email, avatar: formData.avatar });
+      toast.success('Profile updated successfully');
+    } catch (error) {
+      toast.error('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!passwords.current || !passwords.new || !passwords.confirm) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    if (passwords.new !== passwords.confirm) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (!user?.id) return;
+
+    setIsUpdatingPassword(true);
+    try {
+      await api.patch(`/users/${user.id}`, {
+        currentPassword: passwords.current,
+        newPassword: passwords.new,
+      });
+      toast.success('Password updated successfully');
+      setPasswords({ current: '', new: '', confirm: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update password');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -82,11 +153,18 @@ export function SettingsPage() {
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={user?.avatar} />
+                    <AvatarImage src={formData.avatar || user?.avatar} />
                     <AvatarFallback className="text-2xl">{user?.name?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <Button variant="outline" className="mb-2">
+                    <input
+                      type="file"
+                      id="avatar-upload"
+                      className="hidden"
+                      accept="image/jpeg, image/png, image/gif"
+                      onChange={handlePhotoChange}
+                    />
+                    <Button variant="outline" className="mb-2" onClick={() => document.getElementById('avatar-upload')?.click()}>
                       <Camera className="h-4 w-4 mr-2" />
                       Change Photo
                     </Button>
@@ -106,7 +184,8 @@ export function SettingsPage() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="name"
-                        defaultValue={user?.name}
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         className="pl-10"
                       />
                     </div>
@@ -118,7 +197,8 @@ export function SettingsPage() {
                       <Input
                         id="email"
                         type="email"
-                        defaultValue={user?.email}
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                         className="pl-10"
                       />
                     </div>
@@ -296,17 +376,35 @@ export function SettingsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="current">Current Password</Label>
-                  <Input id="current" type="password" />
+                  <Input
+                    id="current"
+                    type="password"
+                    value={passwords.current}
+                    onChange={(e) => setPasswords(prev => ({ ...prev, current: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="new">New Password</Label>
-                  <Input id="new" type="password" />
+                  <Input
+                    id="new"
+                    type="password"
+                    value={passwords.new}
+                    onChange={(e) => setPasswords(prev => ({ ...prev, new: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm">Confirm New Password</Label>
-                  <Input id="confirm" type="password" />
+                  <Input
+                    id="confirm"
+                    type="password"
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords(prev => ({ ...prev, confirm: e.target.value }))}
+                  />
                 </div>
-                <Button>Update Password</Button>
+                <Button onClick={handleUpdatePassword} disabled={isUpdatingPassword}>
+                  {isUpdatingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Update Password
+                </Button>
               </CardContent>
             </Card>
 

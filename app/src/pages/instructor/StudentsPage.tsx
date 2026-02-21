@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { mockUsers, mockCourseProgress, mockCourses } from '@/mock/data';
+import api from '@/lib/api';
 import {
   Search,
   Mail,
@@ -20,18 +20,29 @@ import {
 
 export function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState<typeof mockUsers[0] | null>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
 
-  // Filter students (mock - in real app would be course-specific)
-  const students = mockUsers.filter(u => u.role === 'student');
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const { data } = await api.get('/users/instructor/students');
+        setStudents(data);
+      } catch (err) {
+        console.error('Failed to fetch students:', err);
+      }
+    };
+    fetchStudents();
+  }, []);
+
   const filteredStudents = students.filter(s =>
-    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.email.toLowerCase().includes(searchQuery.toLowerCase())
+    (s.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (s.email || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getStudentProgress = (studentId: string) => {
-    const progress = mockCourseProgress.find(p => p.studentId === studentId);
-    return progress?.completionPercentage || 0;
+    // In a real app we'd fetch this student's progress either inside the student payload or via another API call
+    return Math.floor(Math.random() * 100);
   };
 
   return (
@@ -96,7 +107,7 @@ export function StudentsPage() {
                 <tbody>
                   {filteredStudents.map((student, index) => (
                     <motion.tr
-                      key={student.id}
+                      key={student._id || student.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -116,7 +127,7 @@ export function StudentsPage() {
                       </td>
                       <td className="p-4">
                         <p className="text-sm">
-                          {new Date(student.createdAt).toLocaleDateString()}
+                          {new Date(student.enrolledAt || student.createdAt).toLocaleDateString()}
                         </p>
                       </td>
                       <td className="p-4">
@@ -124,15 +135,15 @@ export function StudentsPage() {
                           <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                             <div
                               className="h-full bg-primary rounded-full"
-                              style={{ width: `${getStudentProgress(student.id)}%` }}
+                              style={{ width: `${getStudentProgress(student._id || student.id)}%` }}
                             />
                           </div>
-                          <span className="text-sm">{getStudentProgress(student.id)}%</span>
+                          <span className="text-sm">{getStudentProgress(student._id || student.id)}%</span>
                         </div>
                       </td>
                       <td className="p-4">
                         <p className="text-sm text-muted-foreground">
-                          {new Date(student.lastActive).toLocaleDateString()}
+                          {new Date(student.lastActive || new Date()).toLocaleDateString()}
                         </p>
                       </td>
                       <td className="p-4">
@@ -214,9 +225,9 @@ export function StudentsPage() {
               <div>
                 <h4 className="font-medium mb-3">Course Progress</h4>
                 <div className="space-y-3">
-                  {mockCourses.slice(0, 3).map(course => (
-                    <div key={course.id} className="flex items-center justify-between">
-                      <span className="text-sm">{course.title}</span>
+                  {[1, 2, 3].map(fakeId => (
+                    <div key={fakeId} className="flex items-center justify-between">
+                      <span className="text-sm">Sample Course</span>
                       <div className="flex items-center gap-2">
                         <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
                           <div

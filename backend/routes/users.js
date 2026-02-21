@@ -1,5 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
+import Enrollment from '../models/Enrollment.js';
+import Course from '../models/Course.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,6 +11,31 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
     try {
         const users = await User.find().select('-password').sort({ createdAt: -1 });
         res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /api/users/instructor/students - Get all students enrolled in instructor's courses
+router.get('/instructor/students', protect, authorize('instructor'), async (req, res) => {
+    try {
+        const courses = await Course.find({ instructorId: req.user._id });
+        const courseIds = courses.map(c => c._id);
+        const enrollments = await Enrollment.find({ courseId: { $in: courseIds } }).populate('studentId', '-password');
+
+        // Remove duplicates if a student is enrolled in multiple courses
+        const uniqueStudentsMap = new Map();
+        enrollments.forEach(enrollment => {
+            if (enrollment.studentId && !uniqueStudentsMap.has(enrollment.studentId._id.toString())) {
+                uniqueStudentsMap.set(enrollment.studentId._id.toString(), {
+                    ...enrollment.studentId.toObject(),
+                    enrolledAt: enrollment.createdAt, // Just taking the first found enrollment date
+                    lastActive: enrollment.studentId?.updatedAt || new Date().toISOString()
+                });
+            }
+        });
+
+        res.json(Array.from(uniqueStudentsMap.values()));
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -33,15 +60,28 @@ router.patch('/:id', protect, async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        const { name, avatar, isActive } = req.body;
-        const updates = {};
-        if (name !== undefined) updates.name = name;
-        if (avatar !== undefined) updates.avatar = avatar;
-        if (isActive !== undefined && req.user.role === 'admin') updates.isActive = isActive;
+        const { name, email, avatar, isActive, currentPassword, newPassword } = req.body;
 
-        const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password');
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
-        res.json(user);
+
+        if (newPassword) {
+            if (!currentPassword) return res.status(400).json({ message: 'Current password is required to set new password' });
+            const isMatch = await user.comparePassword(currentPassword);
+            if (!isMatch) return res.status(401).json({ message: 'Invalid current password' });
+            user.password = newPassword;
+        }
+
+        if (name !== undefined) user.name = name;
+        if (email !== undefined) user.email = email;
+        if (avatar !== undefined) user.avatar = avatar;
+        if (isActive !== undefined && req.user.role === 'admin') user.isActive = isActive;
+
+        await user.save();
+
+        // Return without password
+        const userResponse = await User.findById(user._id).select('-password');
+        res.json(userResponse);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { mockLessons, mockCourses } from '@/mock/data';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import {
   Plus,
   Search,
@@ -25,9 +26,73 @@ export function LessonsPage() {
   const [selectedCourse, setSelectedCourse] = useState('c1');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  const course = mockCourses.find(c => c.id === selectedCourse);
-  const lessons = mockLessons.filter(l => l.courseId === selectedCourse);
-  const myCourses = mockCourses.slice(0, 3);
+  const [myCourses, setMyCourses] = useState<any[]>([]);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newLessonData, setNewLessonData] = useState({
+    title: '',
+    description: '',
+    videoUrl: '',
+  });
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const { data } = await api.get('/courses/all');
+        setMyCourses(data);
+        if (data.length > 0) {
+          setSelectedCourse(data[0]._id || data[0].id);
+        }
+      } catch (error) {
+        console.error('Failed to fetch courses:', error);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedCourse) return;
+    const fetchLessons = async () => {
+      try {
+        const { data } = await api.get(`/lessons?courseId=${selectedCourse}`);
+        setLessons(data);
+      } catch (error) {
+        console.error('Failed to fetch lessons:', error);
+      }
+    };
+    fetchLessons();
+  }, [selectedCourse]);
+
+  const handleAddLesson = async () => {
+    if (!newLessonData.title) {
+      toast.error('Title is required');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        title: newLessonData.title,
+        description: newLessonData.description,
+        videoUrl: newLessonData.videoUrl,
+        courseId: selectedCourse,
+        duration: 15, // Dummy for now
+        order: lessons.length + 1,
+        resources: []
+      };
+      const { data } = await api.post('/lessons', payload);
+      setLessons([...lessons, data]);
+      setNewLessonData({ title: '', description: '', videoUrl: '' });
+      setShowAddModal(false);
+      toast.success('Lesson added successfully');
+    } catch (error) {
+      toast.error('Failed to add lesson');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const course = myCourses.find(c => (c._id || c.id) === selectedCourse);
 
   const filteredLessons = lessons.filter(l =>
     l.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -75,7 +140,7 @@ export function LessonsPage() {
           className="px-4 py-2 rounded-lg border bg-background"
         >
           {myCourses.map(course => (
-            <option key={course.id} value={course.id}>{course.title}</option>
+            <option key={course._id || course.id} value={course._id || course.id}>{course.title}</option>
           ))}
         </select>
         <div className="relative flex-1">
@@ -108,7 +173,7 @@ export function LessonsPage() {
             <div className="space-y-2">
               {filteredLessons.map((lesson, index) => (
                 <motion.div
-                  key={lesson.id}
+                  key={lesson._id || lesson.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -133,7 +198,7 @@ export function LessonsPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <FileText className="h-4 w-4" />
-                      {lesson.resources.length}
+                      {lesson.resources?.length || 0}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -174,7 +239,11 @@ export function LessonsPage() {
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Lesson Title</label>
-              <Input placeholder="Enter lesson title" />
+              <Input
+                placeholder="Enter lesson title"
+                value={newLessonData.title}
+                onChange={(e) => setNewLessonData(prev => ({ ...prev, title: e.target.value }))}
+              />
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Description</label>
@@ -182,20 +251,23 @@ export function LessonsPage() {
                 className="w-full p-3 rounded-lg border resize-none"
                 rows={3}
                 placeholder="Brief description of the lesson"
+                value={newLessonData.description}
+                onChange={(e) => setNewLessonData(prev => ({ ...prev, description: e.target.value }))}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Video</label>
-              <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                <Play className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">Upload video or paste URL</p>
-              </div>
+              <label className="text-sm font-medium">Video URL</label>
+              <Input
+                placeholder="Enter video URL"
+                value={newLessonData.videoUrl}
+                onChange={(e) => setNewLessonData(prev => ({ ...prev, videoUrl: e.target.value }))}
+              />
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowAddModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => setShowAddModal(false)}>
+              <Button onClick={handleAddLesson} disabled={isSubmitting}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Add Lesson
               </Button>
