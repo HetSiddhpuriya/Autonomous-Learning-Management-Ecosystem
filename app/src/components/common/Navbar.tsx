@@ -89,16 +89,12 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
           <Link to="/courses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
             Courses
           </Link>
-          {!isAuthenticated && (
-            <>
-              <Link to="/#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </Link>
-              <Link to="/#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Testimonials
-              </Link>
-            </>
-          )}
+          <Link to="/features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Features
+          </Link>
+          <Link to="/testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Testimonials
+          </Link>
         </nav>
 
         {/* Right Section */}

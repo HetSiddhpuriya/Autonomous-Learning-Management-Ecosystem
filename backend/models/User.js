@@ -10,6 +10,13 @@ const userSchema = new mongoose.Schema({
     phone: { type: String, default: '' },
     gender: { type: String, default: '' },
     bio: { type: String, default: '' },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
+    primaryExpertise: { type: String, default: '' },
+    experienceLevel: { type: String, enum: ['Beginner', 'Intermediate', 'Expert', ''], default: '' },
+    yearsOfExperience: { type: Number, default: 0 },
+    currentJobTitle: { type: String, default: '' },
+    organization: { type: String, default: '' },
+    registrationComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     lastActive: { type: Date, default: Date.now },
 }, { timestamps: true });

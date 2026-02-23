@@ -24,53 +24,48 @@ export function RegisterPage() {
   const [role, setRole] = useState<UserRole>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    const newErrors: Record<string, string> = {};
 
     if (!name.trim()) {
-      setError('Full name is required');
-      return;
-    }
-
-    if (name.trim().length < 2) {
-      setError('Full name must be at least 2 characters');
-      return;
+      newErrors.name = 'Full name is required';
+    } else if (name.trim().length < 2) {
+      newErrors.name = 'Full name must be at least 2 characters';
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address');
-      return;
+      newErrors.email = 'Please enter a valid email address';
     }
 
     const phoneRegex = /^\+?[\d\s-]{10,}$/;
     if (!phoneRegex.test(phone)) {
-      setError('Please enter a valid phone number (at least 10 digits)');
-      return;
+      newErrors.phone = 'Please enter a valid phone number (at least 10 digits)';
     }
 
     if (!gender) {
-      setError('Please select your gender');
-      return;
+      newErrors.gender = 'Please select your gender';
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
+      newErrors.password = 'Password must be at least 6 characters';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
     }
 
     if (!agreeTerms) {
-      setError('Please agree to the terms and conditions');
+      newErrors.terms = 'Please agree to the terms and conditions';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+
+    setErrors({});
 
     const success = await register(name, email, password, role, phone, gender);
 
@@ -88,7 +83,7 @@ export function RegisterPage() {
           break;
       }
     } else {
-      setError('Email already exists');
+      setErrors({ email: 'Email already exists' });
     }
   };
 
@@ -114,7 +109,7 @@ export function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Role Selection */}
             <div className="space-y-2">
-              <Label>I want to</Label>
+              <Label>I want to <span className="text-destructive">*</span></Label>
               <RadioGroup
                 value={role}
                 onValueChange={(value) => setRole(value as UserRole)}
@@ -144,7 +139,7 @@ export function RegisterPage() {
 
             {/* Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -153,14 +148,15 @@ export function RegisterPage() {
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
+                  className={`pl-10 ${errors.name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
               </div>
+              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -169,14 +165,15 @@ export function RegisterPage() {
                   placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10"
+                  className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
               </div>
+              {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
 
             {/* Phone */}
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phone">Phone Number <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -185,16 +182,17 @@ export function RegisterPage() {
                   placeholder="+1 (555) 000-0000"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="pl-10"
+                  className={`pl-10 ${errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
               </div>
+              {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
             </div>
 
             {/* Gender */}
             <div className="space-y-2">
-              <Label htmlFor="gender">Gender</Label>
+              <Label htmlFor="gender">Gender <span className="text-destructive">*</span></Label>
               <Select value={gender} onValueChange={setGender}>
-                <SelectTrigger id="gender">
+                <SelectTrigger id="gender" className={errors.gender ? 'border-destructive focus:ring-destructive' : ''}>
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent>
@@ -203,10 +201,11 @@ export function RegisterPage() {
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
+              {errors.gender && <p className="text-xs text-destructive">{errors.gender}</p>}
             </div>
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Password <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -215,7 +214,7 @@ export function RegisterPage() {
                   placeholder="Create a password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10"
+                  className={`pl-10 pr-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
                 <button
                   type="button"
@@ -225,11 +224,12 @@ export function RegisterPage() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
             </div>
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">Confirm Password <span className="text-destructive">*</span></Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -238,36 +238,30 @@ export function RegisterPage() {
                   placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-10"
+                  className={`pl-10 ${errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
               </div>
+              {errors.confirmPassword && <p className="text-xs text-destructive">{errors.confirmPassword}</p>}
             </div>
 
             {/* Terms */}
-            <div className="flex items-start gap-2">
-              <Checkbox
-                id="terms"
-                checked={agreeTerms}
-                onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
-              />
-              <Label htmlFor="terms" className="text-sm font-normal leading-tight">
-                I agree to the{' '}
-                <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
-                {' '}and{' '}
-                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
-              </Label>
+            <div className="space-y-1">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="terms"
+                  checked={agreeTerms}
+                  onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
+                  className={errors.terms ? 'border-destructive' : ''}
+                />
+                <Label htmlFor="terms" className="text-sm font-normal leading-tight">
+                  I agree to the{' '}
+                  <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                  {' '}and{' '}
+                  <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>
+                </Label>
+              </div>
+              {errors.terms && <p className="text-xs text-destructive mt-1">{errors.terms}</p>}
             </div>
-
-            {/* Error Message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="text-sm text-red-500 text-center"
-              >
-                {error}
-              </motion.div>
-            )}
 
             <div className="pt-2">
               <Button type="submit" className="w-full" disabled={isLoading || !agreeTerms}>

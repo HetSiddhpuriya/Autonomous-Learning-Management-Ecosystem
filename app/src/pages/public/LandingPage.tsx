@@ -112,7 +112,7 @@ export function LandingPage() {
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-primary/10" />
-        
+
         {/* Animated Background Shapes */}
         <div className="absolute inset-0 overflow-hidden">
           <motion.div
@@ -158,8 +158,8 @@ export function LandingPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
             >
-              Experience personalized education powered by AI. Our adaptive learning 
-              ecosystem tailors every lesson to your unique needs, helping you learn 
+              Experience personalized education powered by AI. Our adaptive learning
+              ecosystem tailors every lesson to your unique needs, helping you learn
               faster and retain more.
             </motion.p>
 
@@ -210,7 +210,7 @@ export function LandingPage() {
               Everything You Need to Succeed
             </h2>
             <p className="text-muted-foreground">
-              Our platform combines cutting-edge AI technology with proven learning methodologies 
+              Our platform combines cutting-edge AI technology with proven learning methodologies
               to deliver an unparalleled educational experience.
             </p>
           </div>
@@ -227,7 +227,7 @@ export function LandingPage() {
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                   className="group"
                 >
-                  <div className="h-full p-6 rounded-xl bg-background border hover:shadow-lg transition-all duration-300">
+                  <div className="h-full p-6 rounded-xl bg-background border hover:shadow-lg transition-all duration-300 flex flex-col items-center text-center">
                     <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                       <Icon className="h-6 w-6" />
                     </div>
@@ -264,16 +264,16 @@ export function LandingPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="relative"
+                  className="relative group hover:-translate-y-2 transition-all duration-300 cursor-pointer flex flex-col items-center text-center"
                 >
-                  <div className="text-6xl font-bold text-muted/20 absolute -top-4 -left-2">
+                  <div className="text-6xl font-bold text-muted/20 absolute -top-4 left-1/2 -translate-x-1/2 group-hover:text-primary/10 transition-colors duration-300 z-0">
                     {step.step}
                   </div>
-                  <div className="relative pt-8">
-                    <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
-                      <Icon className="h-8 w-8 text-primary" />
+                  <div className="relative pt-8 flex flex-col items-center z-10">
+                    <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary transition-colors duration-300 shadow-sm group-hover:shadow-md">
+                      <Icon className="h-8 w-8 text-primary group-hover:text-primary-foreground transition-colors duration-300" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
+                    <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors duration-300">{step.title}</h3>
                     <p className="text-muted-foreground">{step.description}</p>
                   </div>
                 </motion.div>
@@ -306,7 +306,7 @@ export function LandingPage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 className="group cursor-pointer"
               >
-                <div className="p-6 rounded-xl bg-background border hover:shadow-lg hover:border-primary/50 transition-all duration-300">
+                <div className="p-6 rounded-xl bg-background border hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col items-center text-center">
                   <div className="text-4xl mb-4">{category.icon}</div>
                   <h3 className="text-lg font-semibold mb-1 group-hover:text-primary transition-colors">
                     {category.name}
@@ -324,8 +324,8 @@ export function LandingPage() {
       {/* Featured Courses */}
       <section id="courses" className="py-24">
         <div className="container px-6">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-12">
-            <div className="max-w-xl">
+          <div className="relative mb-16 flex flex-col items-center">
+            <div className="text-center max-w-2xl mx-auto">
               <Badge variant="outline" className="mb-4">Featured Courses</Badge>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
                 Start Learning Today
@@ -334,12 +334,14 @@ export function LandingPage() {
                 Hand-picked courses from industry experts to help you achieve your goals.
               </p>
             </div>
-            <Button variant="outline" className="mt-4 md:mt-0" asChild>
-              <Link to="/courses">
-                View All Courses
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </Link>
-            </Button>
+            <div className="mt-8 flex justify-center md:mt-0 md:absolute md:right-0 md:bottom-2">
+              <Button variant="outline" asChild>
+                <Link to="/courses">
+                  View All Courses
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Link>
+              </Button>
+            </div>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -375,19 +377,19 @@ export function LandingPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="bg-background rounded-xl p-6 border"
+                className="bg-background rounded-xl p-6 border flex flex-col items-center text-center"
               >
-                <div className="flex items-center gap-1 mb-4">
+                <div className="flex items-center justify-center gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
                   ))}
                 </div>
                 <p className="text-muted-foreground mb-6">"{testimonial.content}"</p>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col items-center gap-3">
                   <img
                     src={testimonial.avatar}
                     alt={testimonial.name}
-                    className="w-10 h-10 rounded-full"
+                    className="w-12 h-12 rounded-full mb-2"
                   />
                   <div>
                     <p className="font-semibold">{testimonial.name}</p>
@@ -406,7 +408,7 @@ export function LandingPage() {
           <div className="relative rounded-2xl overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/80" />
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
-            
+
             <div className="relative z-10 py-16 px-8 text-center">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -418,7 +420,7 @@ export function LandingPage() {
                   Ready to Start Your Learning Journey?
                 </h2>
                 <p className="text-primary-foreground/80 max-w-xl mx-auto mb-8">
-                  Join over 50,000 learners who are already transforming their careers 
+                  Join over 50,000 learners who are already transforming their careers
                   with our adaptive learning platform.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -428,7 +430,7 @@ export function LandingPage() {
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Link>
                   </Button>
-                  <Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" asChild>
+                  <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground/50 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" asChild>
                     <Link to="/courses">
                       Browse Courses
                     </Link>

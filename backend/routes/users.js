@@ -76,6 +76,16 @@ router.patch('/:id', protect, async (req, res) => {
         if (email !== undefined) user.email = email;
         if (avatar !== undefined) user.avatar = avatar;
         if (isActive !== undefined && req.user.role === 'admin') user.isActive = isActive;
+        if (req.body.status !== undefined && req.user.role === 'admin') user.status = req.body.status;
+
+        // Instructor Registration Fields
+        const { primaryExpertise, experienceLevel, yearsOfExperience, currentJobTitle, organization, registrationComplete } = req.body;
+        if (primaryExpertise !== undefined) user.primaryExpertise = primaryExpertise;
+        if (experienceLevel !== undefined) user.experienceLevel = experienceLevel;
+        if (yearsOfExperience !== undefined) user.yearsOfExperience = yearsOfExperience;
+        if (currentJobTitle !== undefined) user.currentJobTitle = currentJobTitle;
+        if (organization !== undefined) user.organization = organization;
+        if (registrationComplete !== undefined) user.registrationComplete = registrationComplete;
 
         await user.save();
 

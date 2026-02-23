@@ -45,10 +45,28 @@ export function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
-  const handleBanUser = (userId: string) => {
-    // Mock ban action
-    setShowActionModal(false);
-    setSelectedUser(null);
+  const handleBanUser = async (userId: string, isActive: boolean) => {
+    try {
+      await api.patch(`/users/${userId}`, { isActive });
+      setUsers(users.map(u => u.id === userId ? { ...u, isActive } : u));
+      if (selectedUser?.id === userId) {
+        setSelectedUser({ ...selectedUser, isActive });
+      }
+    } catch (err) {
+      console.error('Error updating user:', err);
+    }
+  };
+
+  const handleUpdateStatus = async (userId: string, newStatus: string) => {
+    try {
+      await api.patch(`/users/${userId}`, { status: newStatus });
+      setUsers(users.map(u => u.id === userId ? { ...u, status: newStatus as User['status'] } : u));
+      if (selectedUser?.id === userId) {
+        setSelectedUser({ ...selectedUser, status: newStatus as User['status'] });
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+    }
   };
 
   return (
@@ -147,9 +165,21 @@ export function UsersPage() {
                         <RoleBadge role={user.role} />
                       </td>
                       <td className="p-4">
-                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
+                        <div className="flex flex-col gap-1 items-start">
+                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                            {user.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                          {user.role === 'instructor' && user.status === 'pending' && (
+                            <Badge variant="destructive" className="bg-amber-500 hover:bg-amber-600">
+                              Pending Admin Approval
+                            </Badge>
+                          )}
+                          {user.role === 'instructor' && user.status === 'approved' && (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              Approved
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <p className="text-sm">
@@ -218,6 +248,34 @@ export function UsersPage() {
                 </div>
               </div>
 
+              {selectedUser.role === 'instructor' && selectedUser.registrationComplete && (
+                <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+                  <h4 className="font-semibold text-foreground mb-3">Instructor Application Details</h4>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div>
+                      <p className="text-muted-foreground text-xs">Primary Expertise</p>
+                      <p className="font-medium">{selectedUser.primaryExpertise}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Experience Level</p>
+                      <p className="font-medium">{selectedUser.experienceLevel}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Years of Experience</p>
+                      <p className="font-medium">{selectedUser.yearsOfExperience} years</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Job Title</p>
+                      <p className="font-medium">{selectedUser.currentJobTitle || 'N/A'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground text-xs">Organization</p>
+                      <p className="font-medium">{selectedUser.organization || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start">
                   <Mail className="h-4 w-4 mr-2" />
@@ -231,7 +289,7 @@ export function UsersPage() {
                   <Button
                     variant="outline"
                     className="w-full justify-start text-red-600 hover:text-red-700"
-                    onClick={() => handleBanUser(selectedUser.id)}
+                    onClick={() => handleBanUser(selectedUser.id, false)}
                   >
                     <Ban className="h-4 w-4 mr-2" />
                     Ban User
@@ -240,16 +298,38 @@ export function UsersPage() {
                   <Button
                     variant="outline"
                     className="w-full justify-start text-green-600 hover:text-green-700"
-                    onClick={() => handleBanUser(selectedUser.id)}
+                    onClick={() => handleBanUser(selectedUser.id, true)}
                   >
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Activate User
                   </Button>
                 )}
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
-                  <UserX className="h-4 w-4 mr-2" />
-                  Delete Account
-                </Button>
+                {selectedUser.role === 'instructor' && selectedUser.status === 'pending' && (
+                  <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t">
+                    <Button
+                      variant="outline"
+                      className="w-full text-green-600 hover:text-green-700 hover:bg-green-50"
+                      onClick={() => handleUpdateStatus(selectedUser.id, 'approved')}
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Approve Instructor
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => handleUpdateStatus(selectedUser.id, 'rejected')}
+                    >
+                      <UserX className="h-4 w-4 mr-2" />
+                      Reject Instructor
+                    </Button>
+                  </div>
+                )}
+                <div className="pt-4 border-t space-y-2 mt-2">
+                  <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                    <UserX className="h-4 w-4 mr-2" />
+                    Delete Account
+                  </Button>
+                </div>
               </div>
             </div>
           )}

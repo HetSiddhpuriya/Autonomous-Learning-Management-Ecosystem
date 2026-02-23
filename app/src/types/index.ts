@@ -10,6 +10,13 @@ export interface User {
   createdAt: string;
   lastActive: string;
   isActive: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  primaryExpertise?: string;
+  experienceLevel?: 'Beginner' | 'Intermediate' | 'Expert' | '';
+  yearsOfExperience?: number;
+  currentJobTitle?: string;
+  organization?: string;
+  registrationComplete?: boolean;
 }
 
 // Course Types

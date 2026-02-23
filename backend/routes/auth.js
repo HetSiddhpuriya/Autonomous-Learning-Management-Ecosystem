@@ -19,7 +19,8 @@ router.post('/register', async (req, res) => {
         if (existing)
             return res.status(400).json({ message: 'Email already in use' });
 
-        const user = await User.create({ name, email, password, role, phone, gender });
+        const status = role === 'instructor' ? 'pending' : 'approved';
+        const user = await User.create({ name, email, password, role, phone, gender, status });
         const token = generateToken(user._id);
 
         res.status(201).json({ token, user });
