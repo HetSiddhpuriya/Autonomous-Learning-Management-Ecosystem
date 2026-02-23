@@ -21,7 +21,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  Upload,
   CheckCircle2,
   Loader2,
   Image as ImageIcon,
@@ -39,6 +38,7 @@ export function CreateCoursePage() {
     skillTags: [] as string[],
     newTag: '',
     thumbnail: '',
+    price: '',
   });
 
   const categories = [
@@ -97,8 +97,9 @@ export function CreateCoursePage() {
         description: courseData.description,
         category: courseData.category,
         difficulty: courseData.difficulty,
-        tags: courseData.skillTags,
+        skillTags: courseData.skillTags, // Fix: Changed tags to skillTags as defined in model/schema
         thumbnail: courseData.thumbnail,
+        price: Number(courseData.price) || 0,
         isPublished: false,
       };
       await api.post('/courses', payload);
@@ -119,7 +120,7 @@ export function CreateCoursePage() {
       case 2:
         return courseData.category && courseData.difficulty;
       case 3:
-        return courseData.skillTags.length > 0;
+        return courseData.skillTags.length > 0 && courseData.price.trim() !== '';
       default:
         return true;
     }
@@ -265,6 +266,22 @@ export function CreateCoursePage() {
                 Add {3 - courseData.skillTags.length} more tag(s)
               </p>
             )}
+
+            <div className="pt-4 mt-2 border-t space-y-2">
+              <Label htmlFor="price">Course Price ($) *</Label>
+              <Input
+                id="price"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00 (Leave 0 for free)"
+                value={courseData.price}
+                onChange={(e) => setCourseData(prev => ({ ...prev, price: e.target.value }))}
+              />
+              <p className="text-sm text-muted-foreground">
+                Set to 0 if the course is free
+              </p>
+            </div>
           </div>
         );
 
@@ -281,6 +298,10 @@ export function CreateCoursePage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Category</span>
                   <span className="font-medium capitalize">{courseData.category}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-medium">{Number(courseData.price) === 0 ? 'Free' : `$${Number(courseData.price).toFixed(2)}`}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Difficulty</span>

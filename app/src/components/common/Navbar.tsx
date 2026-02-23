@@ -83,16 +83,16 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6">
+          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
+          <Link to="/courses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Courses
+          </Link>
           {!isAuthenticated && (
             <>
-              <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </Link>
               <Link to="/#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Features
-              </Link>
-              <Link to="/#courses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Courses
               </Link>
               <Link to="/#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
                 Testimonials

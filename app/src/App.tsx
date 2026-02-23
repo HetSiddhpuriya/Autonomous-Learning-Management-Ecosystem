@@ -8,6 +8,7 @@ import { DashboardLayout } from '@/layouts/DashboardLayout';
 
 // Public Pages
 import { LandingPage } from '@/pages/public/LandingPage';
+import { BrowseCoursesPage } from '@/pages/public/CoursesPage';
 
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -48,6 +49,7 @@ function App() {
               {/* Public Routes */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<LandingPage />} />
+                <Route path="/courses" element={<BrowseCoursesPage />} />
               </Route>
 
               {/* Auth Routes */}
