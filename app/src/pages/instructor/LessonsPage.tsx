@@ -25,6 +25,8 @@ export function LessonsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('c1');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModuleModal, setShowAddModuleModal] = useState(false);
+  const [newModuleName, setNewModuleName] = useState('');
 
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
@@ -32,6 +34,7 @@ export function LessonsPage() {
   const [newLessonData, setNewLessonData] = useState({
     title: '',
     description: '',
+    module: '',
     videoUrl: '',
   });
 
@@ -73,6 +76,7 @@ export function LessonsPage() {
       const payload = {
         title: newLessonData.title,
         description: newLessonData.description,
+        module: newLessonData.module,
         videoUrl: newLessonData.videoUrl,
         courseId: selectedCourse,
         duration: 15, // Dummy for now
@@ -81,7 +85,7 @@ export function LessonsPage() {
       };
       const { data } = await api.post('/lessons', payload);
       setLessons([...lessons, data]);
-      setNewLessonData({ title: '', description: '', videoUrl: '' });
+      setNewLessonData({ title: '', description: '', module: '', videoUrl: '' });
       setShowAddModal(false);
       toast.success('Lesson added successfully');
     } catch (error) {
@@ -90,6 +94,18 @@ export function LessonsPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddModule = () => {
+    if (!newModuleName.trim()) {
+      toast.error('Module name is required');
+      return;
+    }
+    // Stub implementation: Since module is a string attached to lessons, 
+    // we can simulate its creation for now.
+    toast.success(`Module "${newModuleName}" created successfully!`);
+    setNewModuleName('');
+    setShowAddModuleModal(false);
   };
 
   const course = myCourses.find(c => (c._id || c.id) === selectedCourse);
@@ -120,10 +136,16 @@ export function LessonsPage() {
               Organize and manage your course content
             </p>
           </div>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Lesson
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" onClick={() => setShowAddModuleModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Module
+            </Button>
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lesson
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -256,6 +278,14 @@ export function LessonsPage() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Module Name</label>
+              <Input
+                placeholder="e.g., Section 1: Introduction"
+                value={newLessonData.module}
+                onChange={(e) => setNewLessonData(prev => ({ ...prev, module: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Video URL</label>
               <Input
                 placeholder="Enter video URL"
@@ -270,6 +300,37 @@ export function LessonsPage() {
               <Button onClick={handleAddLesson} disabled={isSubmitting}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Add Lesson
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Module Modal */}
+      <Dialog open={showAddModuleModal} onOpenChange={setShowAddModuleModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Module</DialogTitle>
+            <DialogDescription>
+              Create a new module section for {course?.title}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Module Name</label>
+              <Input
+                placeholder="Enter module name"
+                value={newModuleName}
+                onChange={(e) => setNewModuleName(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAddModuleModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddModule}>
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Add Module
               </Button>
             </div>
           </div>

@@ -77,7 +77,7 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     isPublished: true,
     createdAt: '2023-09-15T10:00:00Z',
-    price: 89.99,
+    price: 4999,
   },
   {
     id: 'c2',
@@ -95,7 +95,7 @@ export const mockCourses: Course[] = [
     rating: 4.9,
     isPublished: true,
     createdAt: '2023-11-01T14:30:00Z',
-    price: 79.99,
+    price: 3999,
   },
   {
     id: 'c3',
@@ -113,7 +113,7 @@ export const mockCourses: Course[] = [
     rating: 4.7,
     isPublished: true,
     createdAt: '2023-08-10T09:00:00Z',
-    price: 69.99,
+    price: 2999,
   },
   {
     id: 'c4',
@@ -131,7 +131,7 @@ export const mockCourses: Course[] = [
     rating: 4.6,
     isPublished: true,
     createdAt: '2023-12-01T11:00:00Z',
-    price: 59.99,
+    price: 1999,
   },
   {
     id: 'c5',
@@ -149,7 +149,7 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     isPublished: true,
     createdAt: '2024-01-10T10:30:00Z',
-    price: 99.99,
+    price: 5999,
   },
   {
     id: 'c6',
@@ -167,7 +167,7 @@ export const mockCourses: Course[] = [
     rating: 4.5,
     isPublished: false,
     createdAt: '2024-02-01T09:00:00Z',
-    price: 74.99,
+    price: 4500,
   },
 ];
 

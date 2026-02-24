@@ -34,11 +34,14 @@ export function CreateCoursePage() {
     title: '',
     description: '',
     category: '',
+    customCategory: '',
     difficulty: '',
     skillTags: [] as string[],
     newTag: '',
     thumbnail: '',
     price: '',
+    duration: '',
+    durationUnit: 'minutes',
   });
 
   const categories = [
@@ -92,14 +95,19 @@ export function CreateCoursePage() {
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
+      let calculatedDuration = Number(courseData.duration) || 0;
+      if (courseData.durationUnit === 'hours') calculatedDuration *= 60;
+      else if (courseData.durationUnit === 'months') calculatedDuration *= 30 * 24 * 60; // 30 days scale
+
       const payload = {
         title: courseData.title,
         description: courseData.description,
-        category: courseData.category,
+        category: courseData.category === 'other' ? courseData.customCategory : courseData.category,
         difficulty: courseData.difficulty,
         skillTags: courseData.skillTags, // Fix: Changed tags to skillTags as defined in model/schema
         thumbnail: courseData.thumbnail,
         price: Number(courseData.price) || 0,
+        duration: calculatedDuration,
         isPublished: false,
       };
       await api.post('/courses', payload);
@@ -118,9 +126,10 @@ export function CreateCoursePage() {
       case 1:
         return courseData.title.trim() && courseData.description.trim();
       case 2:
-        return courseData.category && courseData.difficulty;
+        const hasValidCategory = courseData.category === 'other' ? courseData.customCategory.trim() !== '' : courseData.category !== '';
+        return hasValidCategory && courseData.difficulty !== '';
       case 3:
-        return courseData.skillTags.length > 0 && courseData.price.trim() !== '';
+        return courseData.skillTags.length > 0 && courseData.price.trim() !== '' && courseData.duration.trim() !== '';
       default:
         return true;
     }
@@ -176,9 +185,22 @@ export function CreateCoursePage() {
                   {categories.map(cat => (
                     <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
                   ))}
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {courseData.category === 'other' && (
+              <div className="space-y-2">
+                <Label htmlFor="customCategory">Custom Category Name *</Label>
+                <Input
+                  id="customCategory"
+                  placeholder="e.g., Personal Development"
+                  value={courseData.customCategory}
+                  onChange={(e) => setCourseData(prev => ({ ...prev, customCategory: e.target.value }))}
+                />
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Difficulty Level *</Label>
@@ -268,7 +290,7 @@ export function CreateCoursePage() {
             )}
 
             <div className="pt-4 mt-2 border-t space-y-2">
-              <Label htmlFor="price">Course Price ($) *</Label>
+              <Label htmlFor="price">Course Price (₹) *</Label>
               <Input
                 id="price"
                 type="number"
@@ -280,6 +302,37 @@ export function CreateCoursePage() {
               />
               <p className="text-sm text-muted-foreground">
                 Set to 0 if the course is free
+              </p>
+            </div>
+
+            <div className="pt-4 mt-2 border-t space-y-2">
+              <Label htmlFor="duration">Course Duration *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  placeholder="e.g., 120"
+                  value={courseData.duration}
+                  onChange={(e) => setCourseData(prev => ({ ...prev, duration: e.target.value }))}
+                  className="flex-1"
+                />
+                <Select
+                  value={courseData.durationUnit}
+                  onValueChange={(value) => setCourseData(prev => ({ ...prev, durationUnit: value }))}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="minutes">Minutes</SelectItem>
+                    <SelectItem value="hours">Hours</SelectItem>
+                    <SelectItem value="months">Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Estimated total time for completion
               </p>
             </div>
           </div>
@@ -297,11 +350,15 @@ export function CreateCoursePage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium capitalize">{courseData.category}</span>
+                  <span className="font-medium capitalize">{courseData.category === 'other' ? courseData.customCategory : courseData.category}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Price</span>
-                  <span className="font-medium">{Number(courseData.price) === 0 ? 'Free' : `$${Number(courseData.price).toFixed(2)}`}</span>
+                  <span className="font-medium">{Number(courseData.price) === 0 ? 'Free' : `₹${Number(courseData.price).toLocaleString('en-IN')}`}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span className="font-medium capitalize">{courseData.duration} {courseData.durationUnit}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Difficulty</span>

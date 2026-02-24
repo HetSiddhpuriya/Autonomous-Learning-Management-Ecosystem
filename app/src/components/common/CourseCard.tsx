@@ -129,8 +129,8 @@ export function CourseCard({
             {course.difficulty}
           </Badge>
           {course.price && (
-            <Badge variant="secondary" className="absolute top-3 right-3 font-semibold">
-              ${course.price}
+            <Badge variant="secondary" className="absolute top-3 right-3 font-semibold bg-white/90 backdrop-blur-sm text-slate-800">
+              ₹{course.price.toLocaleString('en-IN')}
             </Badge>
           )}
         </div>
@@ -144,12 +144,12 @@ export function CourseCard({
               <span className="text-sm font-medium">{course.rating}</span>
             </div>
           </div>
-          
+
           <h3 className="font-semibold text-lg line-clamp-2 mb-1 group-hover:text-primary transition-colors">
             {course.title}
           </h3>
           <p className="text-sm text-muted-foreground mb-3">{course.instructorName}</p>
-          
+
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
             <span className="flex items-center gap-1">
               <BookOpen className="h-4 w-4" />
@@ -176,8 +176,8 @@ export function CourseCard({
           )}
 
           {showActions && (
-            <Button 
-              className="w-full" 
+            <Button
+              className="w-full"
               variant={showProgress && progress > 0 ? 'default' : 'outline'}
               onClick={onContinue || onEnroll}
             >

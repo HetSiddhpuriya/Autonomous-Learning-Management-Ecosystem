@@ -232,8 +232,8 @@ export function CourseDetailsPage() {
 
                                     <CardContent className="p-6">
                                         <div className="mb-6 flex items-baseline gap-3">
-                                            <span className="text-3xl font-bold text-slate-900">${course.price || 89.99}</span>
-                                            <span className="text-slate-400 line-through text-lg">${((course.price || 89.99) * 2.2).toFixed(2)}</span>
+                                            <span className="text-3xl font-bold text-slate-900">₹{(course.price || 4999).toLocaleString('en-IN')}</span>
+                                            <span className="text-slate-400 line-through text-lg">₹{((course.price || 4999) * 2.2).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                                         </div>
 
                                         <div className="space-y-3 mb-6">

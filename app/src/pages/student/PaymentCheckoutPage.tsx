@@ -79,7 +79,7 @@ export function PaymentCheckoutPage() {
 
     if (!course) return null;
 
-    const price = course.price || 89.99;
+    const price = course.price || 4999;
 
     return (
         <div className="min-h-screen bg-[#F5F7FA] text-slate-800 font-sans pb-20">
@@ -239,7 +239,7 @@ export function PaymentCheckoutPage() {
                                                     <p className="text-sm text-slate-500 max-w-[250px] mx-auto">You will be securely redirected to the payment gateway to complete your transaction.</p>
                                                 </div>
                                                 <Button size="lg" className="bg-red-600 hover:bg-red-700 w-full max-w-xs" onClick={handlePayment}>
-                                                    Pay ${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    Pay ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </Button>
                                             </motion.div>
                                         )}
@@ -277,12 +277,12 @@ export function PaymentCheckoutPage() {
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between text-sm">
                                         <span className="text-slate-500">Course Fee</span>
-                                        <span className="font-medium text-slate-700">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        <span className="font-medium text-slate-700">₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
                                     <div className="pt-4 border-t border-dashed border-slate-200 flex items-center justify-between">
                                         <span className="font-bold text-slate-800">Total Amount</span>
-                                        <span className="font-bold text-lg text-slate-800">${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        <span className="font-bold text-lg text-slate-800">₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
                                 </div>
                             </CardContent>
