@@ -17,6 +17,7 @@ export interface User {
   currentJobTitle?: string;
   organization?: string;
   registrationComplete?: boolean;
+  wishlist?: string[];
 }
 
 // Course Types

@@ -13,14 +13,21 @@ import type { Course } from '@/types';
 export function CourseDetailsPage() {
     const { courseId } = useParams<{ courseId: string }>();
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
 
     const [course, setCourse] = useState<Course | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isWishlisted, setIsWishlisted] = useState(false);
 
     useEffect(() => {
         fetchCourseDetails();
     }, [courseId]);
+
+    useEffect(() => {
+        if (user && user.wishlist && courseId) {
+            setIsWishlisted(user.wishlist.includes(courseId));
+        }
+    }, [user, courseId]);
 
     const fetchCourseDetails = async () => {
         try {
@@ -45,12 +52,26 @@ export function CourseDetailsPage() {
             toast.error('Only students can enroll in courses');
             return;
         }
+        navigate(`/student/checkout/${courseId}`);
+    };
+
+    const toggleWishlist = async () => {
+        if (!user) {
+            toast.info('Please log in to add to wishlist');
+            navigate('/login');
+            return;
+        }
+        if (user.role !== 'student') {
+            toast.error('Only students can add courses to wishlist');
+            return;
+        }
+
         try {
-            await api.post(`/courses/${courseId}/enroll`);
-            toast.success('Successfully enrolled in the course!');
-            navigate('/student/courses');
+            const { data } = await api.post('/users/wishlist/toggle', { courseId });
+            updateUser({ wishlist: data.wishlist });
+            toast.success(data.wishlist.includes(courseId!) ? 'Added to wishlist' : 'Removed from wishlist');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || 'Failed to enroll');
+            toast.error(error.response?.data?.message || 'Failed to update wishlist');
         }
     };
 
@@ -227,9 +248,13 @@ export function CourseDetailsPage() {
                                         <p className="text-center text-xs text-slate-500 mb-6">30-Day Money-Back Guarantee</p>
 
                                         <div className="flex gap-4 mb-8">
-                                            <Button variant="ghost" className="flex-1 border border-slate-200 rounded-md py-4 h-auto text-slate-600 font-normal hover:bg-slate-50">
-                                                <Heart className="h-4 w-4 text-slate-500 mr-2" />
-                                                Wishlist
+                                            <Button
+                                                variant="ghost"
+                                                className={`flex-1 border border-slate-200 rounded-md py-4 h-auto font-normal transition-colors ${isWishlisted ? 'bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100 hover:text-rose-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                onClick={toggleWishlist}
+                                            >
+                                                <Heart className={`h-4 w-4 mr-2 ${isWishlisted ? 'fill-current' : 'text-slate-500'}`} />
+                                                {isWishlisted ? 'Wishlisted' : 'Wishlist'}
                                             </Button>
                                             <Button variant="ghost" className="flex-1 border border-slate-200 rounded-md py-4 h-auto text-slate-600 font-normal hover:bg-slate-50">
                                                 <Share2 className="h-4 w-4 text-slate-500 mr-2" />

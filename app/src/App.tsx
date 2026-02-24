@@ -27,6 +27,8 @@ import { DiscussionsPage } from '@/pages/student/DiscussionsPage';
 import { SettingsPage } from '@/pages/student/SettingsPage';
 import { LessonPage } from '@/pages/student/LessonPage';
 import { QuizPage } from '@/pages/student/QuizPage';
+import { WishlistPage } from '@/pages/student/WishlistPage';
+import { PaymentCheckoutPage } from '@/pages/student/PaymentCheckoutPage';
 
 // Instructor Pages
 import { InstructorDashboard } from '@/pages/instructor/InstructorDashboard';
@@ -49,6 +51,9 @@ function App() {
         <NotificationProvider>
           <Router>
             <Routes>
+              {/* Standalone Protected Routes */}
+              <Route path="/student/checkout/:courseId" element={<PaymentCheckoutPage />} />
+
               {/* Public Routes */}
               <Route element={<PublicLayout />}>
                 <Route path="/" element={<LandingPage />} />
@@ -75,6 +80,7 @@ function App() {
                 <Route path="/student/settings" element={<SettingsPage />} />
                 <Route path="/student/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
                 <Route path="/student/quiz/:quizId" element={<QuizPage />} />
+                <Route path="/student/wishlist" element={<WishlistPage />} />
               </Route>
 
               {/* Instructor Routes */}

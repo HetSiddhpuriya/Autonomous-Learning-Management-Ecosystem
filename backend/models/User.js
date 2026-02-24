@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
     registrationComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     lastActive: { type: Date, default: Date.now },
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }]
 }, { timestamps: true });
 
 // Hash password before saving

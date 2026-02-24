@@ -41,6 +41,42 @@ router.get('/instructor/students', protect, authorize('instructor'), async (req,
     }
 });
 
+// POST /api/users/wishlist/toggle - Toggle course in wishlist
+router.post('/wishlist/toggle', protect, async (req, res) => {
+    try {
+        const { courseId } = req.body;
+        if (!courseId) return res.status(400).json({ message: 'Course ID is required' });
+
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const index = user.wishlist.indexOf(courseId);
+        if (index === -1) {
+            user.wishlist.push(courseId);
+        } else {
+            user.wishlist.splice(index, 1);
+        }
+
+        await user.save();
+        const updatedUser = await User.findById(user._id).select('-password');
+        res.json(updatedUser);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /api/users/wishlist/my - Get current user's wishlist courses
+router.get('/wishlist/my', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).populate('wishlist');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        res.json(user.wishlist);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // GET /api/users/:id
 router.get('/:id', protect, async (req, res) => {
     try {
