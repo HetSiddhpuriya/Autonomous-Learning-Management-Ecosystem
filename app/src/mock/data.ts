@@ -11,6 +11,7 @@ export const mockUsers: User[] = [
     createdAt: '2024-01-15T10:00:00Z',
     lastActive: '2024-02-18T08:30:00Z',
     isActive: true,
+    status: 'approved',
   },
   {
     id: '2',
@@ -21,6 +22,7 @@ export const mockUsers: User[] = [
     createdAt: '2023-08-20T14:00:00Z',
     lastActive: '2024-02-18T09:15:00Z',
     isActive: true,
+    status: 'approved',
   },
   {
     id: '3',
@@ -31,6 +33,7 @@ export const mockUsers: User[] = [
     createdAt: '2023-06-10T09:00:00Z',
     lastActive: '2024-02-18T10:00:00Z',
     isActive: true,
+    status: 'approved',
   },
   {
     id: '4',
@@ -41,6 +44,7 @@ export const mockUsers: User[] = [
     createdAt: '2024-01-20T11:30:00Z',
     lastActive: '2024-02-17T16:45:00Z',
     isActive: true,
+    status: 'approved',
   },
   {
     id: '5',
@@ -51,6 +55,7 @@ export const mockUsers: User[] = [
     createdAt: '2023-10-05T13:20:00Z',
     lastActive: '2024-02-18T07:50:00Z',
     isActive: true,
+    status: 'approved',
   },
 ];
 

@@ -46,12 +46,9 @@ export function DashboardLayout({ allowedRoles }: DashboardLayoutProps) {
     });
   };
 
-  // Redirect to login (or home for instructor/admin) if not authenticated
+  // Redirect to home if not authenticated
   if (!isAuthenticated) {
-    if (allowedRoles?.some(role => ['instructor', 'admin'].includes(role))) {
-      return <Navigate to="/" replace />;
-    }
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   // Check if user has allowed role

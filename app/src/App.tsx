@@ -11,6 +11,7 @@ import { LandingPage } from '@/pages/public/LandingPage';
 import { BrowseCoursesPage } from '@/pages/public/CoursesPage';
 import { FeaturesPage } from '@/pages/public/FeaturesPage';
 import { TestimonialsPage } from '@/pages/public/TestimonialsPage';
+import { CourseDetailsPage } from '@/pages/public/CourseDetailsPage';
 
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
@@ -54,6 +55,7 @@ function App() {
                 <Route path="/courses" element={<BrowseCoursesPage />} />
                 <Route path="/features" element={<FeaturesPage />} />
                 <Route path="/testimonials" element={<TestimonialsPage />} />
+                <Route path="/courses/:courseId" element={<CourseDetailsPage />} />
               </Route>
 
               {/* Auth Routes */}

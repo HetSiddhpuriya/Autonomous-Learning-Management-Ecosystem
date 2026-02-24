@@ -38,25 +38,7 @@ export function BrowseCoursesPage() {
     };
 
     const handleEnroll = async (courseId: string) => {
-        if (!user) {
-            toast.info('Please log in to enroll in this course');
-            navigate('/login');
-            return;
-        }
-
-        if (user.role !== 'student') {
-            toast.error('Only students can enroll in courses');
-            return;
-        }
-
-        try {
-            await api.post(`/courses/${courseId}/enroll`);
-            toast.success('Successfully enrolled in the course!');
-            navigate('/student/courses');
-        } catch (error: unknown) {
-            const err = error as { response?: { data?: { message?: string } } };
-            toast.error(err.response?.data?.message || 'Failed to enroll');
-        }
+        navigate(`/courses/${courseId}`);
     };
 
     const filteredCourses = courses.filter((course) => {

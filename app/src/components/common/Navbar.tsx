@@ -46,7 +46,7 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-4">
+        <div className="flex-1 flex items-center gap-4">
           {showSidebarToggle && (
             <Button
               variant="ghost"
@@ -98,7 +98,7 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
         </nav>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center justify-end gap-3">
           {/* Theme Toggle */}
           <Button
             variant="ghost"
