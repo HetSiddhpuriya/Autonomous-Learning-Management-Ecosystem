@@ -12,6 +12,7 @@ import quizRoutes from './routes/quizzes.js';
 import progressRoutes from './routes/progress.js';
 import discussionRoutes from './routes/discussions.js';
 import analyticsRoutes from './routes/analytics.js';
+import moduleRoutes from './routes/modules.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,6 +40,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/progress', progressRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/modules', moduleRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

@@ -16,6 +16,7 @@ export function CourseDetailsPage() {
     const { user, updateUser } = useAuth();
 
     const [course, setCourse] = useState<Course | null>(null);
+    const [modules, setModules] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isWishlisted, setIsWishlisted] = useState(false);
 
@@ -32,8 +33,16 @@ export function CourseDetailsPage() {
     const fetchCourseDetails = async () => {
         try {
             setLoading(true);
-            const { data } = await api.get(`/courses/${courseId}`);
-            setCourse(data);
+            const { data } = await api.get(`/courses/${courseId}/content`);
+            if (data && data.course) {
+                setCourse(data.course);
+                setModules(data.modules || []);
+            } else {
+                // Fallback if previous API format used or backwards compatibility needed
+                const fallbackData = await api.get(`/courses/${courseId}`);
+                setCourse(fallbackData.data);
+                setModules([]);
+            }
         } catch (error) {
             toast.error('Failed to load course details');
             navigate('/courses');
@@ -90,12 +99,19 @@ export function CourseDetailsPage() {
         ? course.skillTags
         : ['Master Web Development', 'Master JavaScript', 'Master React', 'Master Node.js', 'Build real-world projects'];
 
-    const courseContent = [
-        { title: 'Introduction to Web Development', duration: '15:00', lessons: 5 },
-        { title: 'HTML5 Fundamentals', duration: '45:00', lessons: 10 },
-        { title: 'CSS3 Styling', duration: '50:00', lessons: 12 },
-        { title: 'JavaScript Basics', duration: '60:00', lessons: 15, details: 'This section covers the fundamentals of Javascript basics. You will learn through practical examples and hands-on exercises.' },
-    ];
+    const formatDuration = (minutes: number) => {
+        if (!minutes) return '0h 0m';
+        if (minutes < 60) return `${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    };
+
+    // Calculate dynamic stats
+    const totalLessons = modules.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0);
+    const totalDurationMins = modules.reduce((acc, mod) => {
+        return acc + (mod.lessons || []).reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+    }, 0);
 
     return (
         <div className="flex flex-col w-full">
@@ -166,33 +182,55 @@ export function CourseDetailsPage() {
                             <div>
                                 <h2 className="text-2xl font-bold mb-6 text-slate-900">Course Content</h2>
                                 <div className="flex items-center gap-2 text-sm text-slate-500 mb-4 px-1">
-                                    <span>{courseContent.length} sections</span>
+                                    <span>{modules.length} content sections</span>
                                     <span>•</span>
-                                    <span>{course.lessonsCount || 156} lessons</span>
+                                    <span>{totalLessons || course.lessonsCount || 0} lessons</span>
                                     <span>•</span>
-                                    <span>{Math.floor((course.duration || 2520) / 60)} hours total</span>
+                                    <span>{formatDuration(totalDurationMins || course.duration || 0)} total length</span>
                                 </div>
 
-                                <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-slate-200 overflow-hidden" defaultValue="item-3">
-                                    {courseContent.map((section, idx) => (
-                                        <AccordionItem key={idx} value={`item-${idx}`} className="border-b last:border-0 border-slate-200">
-                                            <AccordionTrigger className="px-6 py-4 hover:bg-slate-50 text-slate-900 font-medium">
-                                                <div className="flex items-center justify-between w-full pr-4 text-left">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-slate-400 font-normal w-4">{idx + 1}</span>
-                                                        <Play className="h-4 w-4 text-slate-400 shrink-0" />
-                                                        <span>{section.title}</span>
+                                <Accordion type="single" collapsible className="w-full bg-white rounded-xl border border-slate-200 overflow-hidden" defaultValue="item-0">
+                                    {modules.length > 0 ? modules.map((mod, idx) => {
+                                        const modLessons = mod.lessons || [];
+                                        const modDuration = modLessons.reduce((sum: number, l: any) => sum + (l.duration || 0), 0);
+
+                                        return (
+                                            <AccordionItem key={mod.id || idx} value={`item-${idx}`} className="border-b last:border-0 border-slate-200">
+                                                <AccordionTrigger className="px-6 py-4 hover:bg-slate-50 text-slate-900 font-medium">
+                                                    <div className="flex items-center justify-between w-full pr-4 text-left">
+                                                        <div className="flex flex-1 items-center gap-3">
+                                                            <span className="text-slate-400 font-normal w-4">{idx + 1}</span>
+                                                            <span>{mod.name}</span>
+                                                        </div>
+                                                        <span className="text-sm text-slate-500 font-normal whitespace-nowrap hidden sm:block">
+                                                            {modLessons.length} lessons • {formatDuration(modDuration)}
+                                                        </span>
                                                     </div>
-                                                    <span className="text-sm text-slate-500 font-normal whitespace-nowrap hidden sm:block">
-                                                        {section.lessons} lessons • {section.duration}
-                                                    </span>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="bg-white px-6 py-4 pt-1 border-t border-slate-100 text-slate-600 bg-slate-50/50">
-                                                {section.details || 'Includes comprehensive video lessons, downloadable resources, and quizzes to test your knowledge.'}
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ))}
+                                                </AccordionTrigger>
+                                                <AccordionContent className="bg-white px-6 py-4 pt-1 border-t border-slate-100 text-slate-600 bg-slate-50/50">
+                                                    {modLessons.length > 0 ? (
+                                                        <ul className="space-y-3">
+                                                            {modLessons.map((lesson: any, lIdx: number) => (
+                                                                <li key={lesson.id || lIdx} className="flex items-center justify-between group">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <Play className="h-4 w-4 text-primary shrink-0 opacity-70 group-hover:opacity-100 transition-opacity" />
+                                                                        <span className="text-sm group-hover:text-primary transition-colors">{lesson.title}</span>
+                                                                    </div>
+                                                                    <span className="text-xs text-slate-400">{formatDuration(lesson.duration)}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    ) : (
+                                                        <p className="text-sm text-slate-400 italic">No lessons available in this module</p>
+                                                    )}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        );
+                                    }) : (
+                                        <div className="p-8 text-center text-slate-500 border-b border-slate-100">
+                                            No modules have been added to this course yet.
+                                        </div>
+                                    )}
                                 </Accordion>
                             </div>
 
@@ -267,12 +305,12 @@ export function CourseDetailsPage() {
 
                                             <div className="flex items-center gap-3 text-sm text-slate-600">
                                                 <Play className="h-4 w-4 text-slate-700 shrink-0" />
-                                                <span>{Math.floor((course.duration || 2520) / 60)} hours on-demand video</span>
+                                                <span>{formatDuration(totalDurationMins || course.duration || 0)} on-demand video</span>
                                             </div>
 
                                             <div className="flex items-center gap-3 text-sm text-slate-600">
                                                 <BookOpen className="h-4 w-4 text-slate-700 shrink-0" />
-                                                <span>{course.lessonsCount || 156} lessons</span>
+                                                <span>{totalLessons || course.lessonsCount || 0} lessons</span>
                                             </div>
 
                                             <div className="flex items-center gap-3 text-sm text-slate-600">

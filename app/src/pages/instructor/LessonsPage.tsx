@@ -24,12 +24,15 @@ import {
 export function LessonsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('c1');
+  const [selectedModule, setSelectedModule] = useState('All Modules');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showAddModuleModal, setShowAddModuleModal] = useState(false);
   const [newModuleName, setNewModuleName] = useState('');
+  const [moduleError, setModuleError] = useState('');
 
   const [myCourses, setMyCourses] = useState<any[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
+  const [modules, setModules] = useState<{ id: string, name: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newLessonData, setNewLessonData] = useState({
     title: '',
@@ -37,6 +40,7 @@ export function LessonsPage() {
     module: '',
     videoUrl: '',
   });
+  const [lessonModuleError, setLessonModuleError] = useState('');
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -55,20 +59,37 @@ export function LessonsPage() {
 
   useEffect(() => {
     if (!selectedCourse) return;
-    const fetchLessons = async () => {
+    const fetchLessonsAndModules = async () => {
       try {
-        const { data } = await api.get(`/lessons?courseId=${selectedCourse}`);
-        setLessons(data);
+        const [lessonsRes, modulesRes] = await Promise.all([
+          api.get(`/lessons?courseId=${selectedCourse}`),
+          api.get(`/modules?courseId=${selectedCourse}`)
+        ]);
+
+        setLessons(lessonsRes.data);
+
+        const fetchedModules = modulesRes.data.map((m: any) => ({ id: m.id || m._id, name: m.name }));
+        setModules(fetchedModules);
+
+        if (fetchedModules.length > 0) {
+          setSelectedModule(fetchedModules[0].name);
+        } else {
+          setSelectedModule('All Modules');
+        }
       } catch (error) {
-        console.error('Failed to fetch lessons:', error);
+        console.error('Failed to fetch data:', error);
       }
     };
-    fetchLessons();
+    fetchLessonsAndModules();
   }, [selectedCourse]);
 
   const handleAddLesson = async () => {
     if (!newLessonData.title) {
       toast.error('Title is required');
+      return;
+    }
+    if (!newLessonData.module) {
+      setLessonModuleError('Module selection is required');
       return;
     }
     setIsSubmitting(true);
@@ -96,23 +117,52 @@ export function LessonsPage() {
     }
   };
 
-  const handleAddModule = () => {
-    if (!newModuleName.trim()) {
-      toast.error('Module name is required');
+  const handleAddModule = async () => {
+    const trimmedName = newModuleName.trim();
+    if (!trimmedName) {
+      setModuleError('Module name cannot be empty');
       return;
     }
-    // Stub implementation: Since module is a string attached to lessons, 
-    // we can simulate its creation for now.
-    toast.success(`Module "${newModuleName}" created successfully!`);
-    setNewModuleName('');
-    setShowAddModuleModal(false);
+    setModuleError('');
+
+    try {
+      const payload = {
+        name: trimmedName,
+        courseId: selectedCourse
+      };
+
+      const { data } = await api.post('/modules', payload);
+
+      const newModule = { id: data.id || data._id, name: data.name };
+
+      setModules(prev => {
+        const updatedModules = [...prev, newModule];
+        if (updatedModules.length === 1) {
+          setSelectedModule(newModule.name);
+        }
+        return updatedModules;
+      });
+
+      toast.success(`Module "${trimmedName}" created successfully!`);
+      setNewModuleName('');
+      setShowAddModuleModal(false);
+    } catch (error) {
+      toast.error('Failed to create module');
+      console.error(error);
+    }
   };
 
   const course = myCourses.find(c => (c._id || c.id) === selectedCourse);
 
-  const filteredLessons = lessons.filter(l =>
-    l.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLessons = lessons.filter(l => {
+    const matchesSearch = l.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesModule = selectedModule === 'All Modules' || l.module === selectedModule;
+    return matchesSearch && matchesModule;
+  });
+
+  const modulesToRender = modules.length > 0
+    ? modules.filter(m => selectedModule === 'All Modules' || m.name === selectedModule)
+    : [{ id: 'uncategorized', name: 'Lessons' }];
 
   const formatDuration = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
@@ -174,6 +224,16 @@ export function LessonsPage() {
             className="pl-10"
           />
         </div>
+        <select
+          value={selectedModule}
+          onChange={(e) => setSelectedModule(e.target.value)}
+          className="px-4 py-2 rounded-lg border bg-background"
+        >
+          {modules.length === 0 && <option value="All Modules">All Modules</option>}
+          {modules.map(module => (
+            <option key={module.id} value={module.name}>{module.name}</option>
+          ))}
+        </select>
       </motion.div>
 
       {/* Lessons List */}
@@ -192,65 +252,82 @@ export function LessonsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {filteredLessons.map((lesson, index) => (
-                <motion.div
-                  key={lesson._id || lesson.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted transition-colors group"
-                >
-                  <div className="cursor-move text-muted-foreground hover:text-foreground">
-                    <GripVertical className="h-5 w-5" />
+            <div className="space-y-8">
+              {modulesToRender.map((mod) => {
+                const modLessons = filteredLessons.filter((l) =>
+                  modules.length === 0 ? true : l.module === mod.name
+                );
+
+                return (
+                  <div key={mod.id} className="space-y-4">
+                    <h3 className="text-lg font-semibold border-b pb-2">{mod.name}</h3>
+                    <div className="space-y-2">
+                      {modLessons.length > 0 ? (
+                        modLessons.map((lesson, index) => (
+                          <motion.div
+                            key={lesson._id || lesson.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                            className="flex items-center gap-4 p-4 rounded-lg border hover:bg-muted transition-colors group"
+                          >
+                            <div className="cursor-move text-muted-foreground hover:text-foreground">
+                              <GripVertical className="h-5 w-5" />
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
+                              {lesson.order}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium">{lesson.title}</h4>
+                              <p className="text-sm text-muted-foreground line-clamp-1">
+                                {lesson.description}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                {formatDuration(lesson.duration)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <FileText className="h-4 w-4" />
+                                {lesson.resources?.length || 0}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon">
+                                <Play className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="text-center py-6 border rounded-lg bg-muted/20">
+                          <p className="text-muted-foreground">No lessons in this module</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium">
-                    {lesson.order}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{lesson.title}</h4>
-                    <p className="text-sm text-muted-foreground line-clamp-1">
-                      {lesson.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {formatDuration(lesson.duration)}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FileText className="h-4 w-4" />
-                      {lesson.resources?.length || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="ghost" size="icon">
-                      <Play className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-600">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
-              {filteredLessons.length === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground">No lessons found</p>
-                </div>
-              )}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
       {/* Add Lesson Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      <Dialog open={showAddModal} onOpenChange={(open) => {
+        setShowAddModal(open);
+        if (!open) {
+          setNewLessonData({ title: '', description: '', module: '', videoUrl: '' });
+          setLessonModuleError('');
+        }
+      }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>Add New Lesson</DialogTitle>
@@ -278,12 +355,21 @@ export function LessonsPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Module Name</label>
-              <Input
-                placeholder="e.g., Section 1: Introduction"
+              <label className="text-sm font-medium">Module Section <span className="text-red-500">*</span></label>
+              <select
+                className={`w-full px-4 py-2 rounded-lg border bg-background ${lessonModuleError ? 'border-red-500' : ''}`}
                 value={newLessonData.module}
-                onChange={(e) => setNewLessonData(prev => ({ ...prev, module: e.target.value }))}
-              />
+                onChange={(e) => {
+                  setNewLessonData(prev => ({ ...prev, module: e.target.value }));
+                  if (lessonModuleError) setLessonModuleError('');
+                }}
+              >
+                <option value="" disabled>Select a module</option>
+                {modules.map(m => (
+                  <option key={m.id} value={m.name}>{m.name}</option>
+                ))}
+              </select>
+              {lessonModuleError && <p className="text-sm text-red-500">{lessonModuleError}</p>}
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Video URL</label>
@@ -307,7 +393,13 @@ export function LessonsPage() {
       </Dialog>
 
       {/* Add Module Modal */}
-      <Dialog open={showAddModuleModal} onOpenChange={setShowAddModuleModal}>
+      <Dialog open={showAddModuleModal} onOpenChange={(open) => {
+        setShowAddModuleModal(open);
+        if (!open) {
+          setModuleError('');
+          setNewModuleName('');
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Module</DialogTitle>
@@ -319,10 +411,16 @@ export function LessonsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Module Name</label>
               <Input
+                autoFocus
                 placeholder="Enter module name"
                 value={newModuleName}
-                onChange={(e) => setNewModuleName(e.target.value)}
+                onChange={(e) => {
+                  setNewModuleName(e.target.value);
+                  if (moduleError) setModuleError('');
+                }}
+                className={moduleError ? "border-red-500" : ""}
               />
+              {moduleError && <p className="text-sm text-red-500">{moduleError}</p>}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowAddModuleModal(false)}>

@@ -1,6 +1,8 @@
 import express from 'express';
 import Course from '../models/Course.js';
 import Enrollment from '../models/Enrollment.js';
+import Module from '../models/Module.js';
+import Lesson from '../models/Lesson.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -33,6 +35,61 @@ router.get('/all', protect, authorize('admin', 'instructor'), async (req, res) =
         res.json(courses);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /api/courses/:courseId/content - Get structured course with modules and lessons
+router.get('/:courseId/content', async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        const course = await Course.findById(courseId);
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        const modules = await Module.find({ courseId }).sort({ createdAt: 1 });
+        const allLessons = await Lesson.find({ courseId }).sort({ order: 1 });
+
+        // Structure the response 
+        const structuredModules = modules.map(mod => {
+            return {
+                id: mod._id.toString(),
+                name: mod.name,
+                lessons: allLessons
+                    .filter(lesson => lesson.module === mod.name)
+                    .map(lesson => ({
+                        id: lesson._id.toString(),
+                        title: lesson.title,
+                        duration: lesson.duration
+                    }))
+            };
+        });
+
+        // Handle uncategorized lessons (if any logic allowed lessons without explicitly mapped modules)
+        const uncategorizedLessons = allLessons
+            .filter(lesson => !modules.some(mod => mod.name === lesson.module))
+            .map(lesson => ({
+                id: lesson._id.toString(),
+                title: lesson.title,
+                duration: lesson.duration
+            }));
+
+        if (uncategorizedLessons.length > 0) {
+            structuredModules.push({
+                id: 'uncategorized',
+                name: 'Other Lessons',
+                lessons: uncategorizedLessons
+            });
+        }
+
+        res.json({
+            course,
+            modules: structuredModules
+        });
+    } catch (err) {
+        console.error('Fetch course content error:', err);
+        res.status(500).json({ message: 'Internal server error' });
     }
 });
 
