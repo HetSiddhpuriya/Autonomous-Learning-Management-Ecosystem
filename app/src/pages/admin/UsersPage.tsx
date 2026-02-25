@@ -46,6 +46,10 @@ export function UsersPage() {
     return matchesSearch && matchesRole;
   });
 
+  const pendingUsers = filteredUsers.filter(user => user.status === 'pending');
+  const activeUsers = filteredUsers.filter(user => user.status === 'approved');
+  const rejectedUsers = filteredUsers.filter(user => user.status === 'rejected');
+
   const handleBanUser = async (userId: string, isActive: boolean) => {
     try {
       await api.patch(`/users/${userId}`, { isActive });
@@ -116,8 +120,14 @@ export function UsersPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">
-              {users.length} total users
+            <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-none">
+              {pendingUsers.length} Pending
+            </Badge>
+            <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-200 border-none">
+              {activeUsers.length} Active
+            </Badge>
+            <Badge variant="secondary" className="bg-red-100 text-red-800 hover:bg-red-200 border-none">
+              {rejectedUsers.length} Rejected
             </Badge>
           </div>
         </div>
@@ -151,110 +161,274 @@ export function UsersPage() {
         </select>
       </motion.div>
 
-      {/* Users Table */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-      >
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left p-4 font-medium">User</th>
-                    <th className="text-left p-4 font-medium">Role</th>
-                    <th className="text-left p-4 font-medium">Status</th>
-                    <th className="text-left p-4 font-medium">Joined</th>
-                    <th className="text-left p-4 font-medium">Last Active</th>
-                    <th className="text-left p-4 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user, index) => (
-                    <motion.tr
-                      key={user.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="border-b hover:bg-muted/50 transition-colors"
-                    >
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={user.avatar} />
-                            <AvatarFallback>{user.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{user.name}</p>
-                            <p className="text-sm text-muted-foreground">{user.email}</p>
+      {/* Pending Users Table */}
+      {pendingUsers.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+        >
+          <h2 className="text-xl font-bold mb-4">Pending Users</h2>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-4 font-medium">User</th>
+                      <th className="text-left p-4 font-medium">Role</th>
+                      <th className="text-left p-4 font-medium">Joined Date</th>
+                      <th className="text-left p-4 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingUsers.map((user, index) => (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="border-b hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={user.avatar} />
+                              <AvatarFallback>{user.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <RoleBadge role={user.role} />
-                      </td>
-                      <td className="p-4">
-                        <div className="flex flex-col gap-1 items-start">
-                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                            {user.isActive ? 'Active' : 'Inactive'}
-                          </Badge>
-                          {user.role === 'instructor' && user.status === 'pending' && (
-                            <Badge variant="destructive" className="bg-amber-500 hover:bg-amber-600">
-                              Pending Admin Approval
-                            </Badge>
-                          )}
-                          {user.role === 'instructor' && user.status === 'approved' && (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
-                              Approved
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <p className="text-sm">
-                          {new Date(user.createdAt).toLocaleDateString()}
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(user.lastActive).toLocaleDateString()}
-                        </p>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon">
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setShowActionModal(true);
-                            }}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {filteredUsers.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground">No users found</p>
+                        </td>
+                        <td className="p-4">
+                          <RoleBadge role={user.role} />
+                        </td>
+                        <td className="p-4 py-2">
+                          <p className="text-sm">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                        </td>
+                        <td className="p-4 py-2">
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleUpdateStatus(user.id, 'approved')}>
+                              <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleUpdateStatus(user.id, 'rejected')}>
+                              <UserX className="h-4 w-4 mr-2" /> Reject
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="ml-2"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowActionModal(true);
+                              }}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Active Users Table */}
+      {activeUsers.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.3 }}
+        >
+          <h2 className="text-xl font-bold mb-4">Active Users</h2>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-4 font-medium">User</th>
+                      <th className="text-left p-4 font-medium">Role</th>
+                      <th className="text-left p-4 font-medium">Status</th>
+                      <th className="text-left p-4 font-medium">Joined</th>
+                      <th className="text-left p-4 font-medium">Last Active</th>
+                      <th className="text-left p-4 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activeUsers.map((user, index) => (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="border-b hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={user.avatar} />
+                              <AvatarFallback>{user.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <RoleBadge role={user.role} />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1 items-start">
+                            <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                              {user.isActive ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="p-4 py-2">
+                          <p className="text-sm">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                        </td>
+                        <td className="p-4 py-2">
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(user.lastActive).toLocaleDateString()}
+                          </p>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => window.location.href = `mailto:${user.email}`}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowActionModal(true);
+                              }}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {/* Rejected Users Table */}
+      {rejectedUsers.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.4 }}
+        >
+          <h2 className="text-xl font-bold mb-4">Rejected Users</h2>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-4 font-medium">User</th>
+                      <th className="text-left p-4 font-medium">Role</th>
+                      <th className="text-left p-4 font-medium">Status</th>
+                      <th className="text-left p-4 font-medium">Joined</th>
+                      <th className="text-left p-4 font-medium">Last Active</th>
+                      <th className="text-left p-4 font-medium">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rejectedUsers.map((user, index) => (
+                      <motion.tr
+                        key={user.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="border-b hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={user.avatar} />
+                              <AvatarFallback>{user.name[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{user.name}</p>
+                              <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <RoleBadge role={user.role} />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1 items-start">
+                            <Badge variant="destructive" className="bg-red-500 hover:bg-red-600">
+                              Application Rejected
+                            </Badge>
+                          </div>
+                        </td>
+                        <td className="p-4 py-2">
+                          <p className="text-sm">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </p>
+                        </td>
+                        <td className="p-4 py-2">
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(user.lastActive).toLocaleDateString()}
+                          </p>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => window.location.href = `mailto:${user.email}`}>
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setShowActionModal(true);
+                              }}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
+
+      {users.length === 0 && (
+        <div className="text-center py-12">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground">No users found</p>
+        </div>
+      )}
 
       {/* User Actions Modal */}
       <Dialog open={showActionModal} onOpenChange={setShowActionModal}>
