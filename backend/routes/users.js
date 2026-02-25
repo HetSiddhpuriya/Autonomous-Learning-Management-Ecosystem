@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Enrollment from '../models/Enrollment.js';
 import Course from '../models/Course.js';
+import Notification from '../models/Notification.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -112,7 +113,19 @@ router.patch('/:id', protect, async (req, res) => {
         if (email !== undefined) user.email = email;
         if (avatar !== undefined) user.avatar = avatar;
         if (isActive !== undefined && req.user.role === 'admin') user.isActive = isActive;
-        if (req.body.status !== undefined && req.user.role === 'admin') user.status = req.body.status;
+        if (req.body.status !== undefined && req.user.role === 'admin') {
+            user.status = req.body.status;
+
+            // Notify user of their application change
+            await Notification.create({
+                recipient: user._id, // notify the exact user
+                title: 'Instructor Application Update',
+                message: `Your instructor application has been ${req.body.status}.`,
+                type: req.body.status === 'approved' ? 'success' : 'error',
+                link: '/settings'
+            });
+        }
+        if (req.body.role !== undefined && req.user.role === 'admin') user.role = req.body.role;
 
         // Instructor Registration Fields
         const { primaryExpertise, experienceLevel, yearsOfExperience, currentJobTitle, organization, registrationComplete } = req.body;

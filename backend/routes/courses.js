@@ -3,6 +3,7 @@ import Course from '../models/Course.js';
 import Enrollment from '../models/Enrollment.js';
 import Module from '../models/Module.js';
 import Lesson from '../models/Lesson.js';
+import Notification from '../models/Notification.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -112,6 +113,16 @@ router.post('/', protect, authorize('instructor', 'admin'), async (req, res) => 
             instructorId: req.user._id,
             instructorName: req.user.name,
         });
+
+        // Notify Admins
+        await Notification.create({
+            recipientRole: 'admin',
+            title: 'New Course Created',
+            message: `${req.user.name} created a new course: ${course.title}.`,
+            type: 'info',
+            link: '/admin/courses'
+        });
+
         res.status(201).json(course);
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -163,6 +174,15 @@ router.post('/:id/enroll', protect, authorize('student'), async (req, res) => {
 
         await Enrollment.create({ studentId: req.user._id, courseId: course._id });
         await Course.findByIdAndUpdate(course._id, { $inc: { enrolledStudents: 1 } });
+
+        // Notify Instructor
+        await Notification.create({
+            recipient: course.instructorId,
+            title: 'New Student Enrolled',
+            message: `${req.user.name} has enrolled in your course: ${course.title}.`,
+            type: 'success',
+            link: '/instructor/students'
+        });
 
         res.status(201).json({ message: 'Enrolled successfully' });
     } catch (err) {

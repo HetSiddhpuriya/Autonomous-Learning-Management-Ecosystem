@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -22,6 +23,24 @@ router.post('/register', async (req, res) => {
         const status = role === 'instructor' ? 'pending' : 'approved';
         const user = await User.create({ name, email, password, role, phone, gender, status });
         const token = generateToken(user._id);
+
+        let adminTitle = 'New user signed up';
+        let adminMsg = `A new ${role} (${name}) has registered.`;
+        let alertType = 'info';
+
+        if (role === 'instructor') {
+            adminTitle = 'Instructor pending approval';
+            adminMsg = `${name} has applied to become an Instructor. Please review their application.`;
+            alertType = 'warning';
+        }
+
+        await Notification.create({
+            recipientRole: 'admin',
+            title: adminTitle,
+            message: adminMsg,
+            type: alertType,
+            link: '/admin/users'
+        });
 
         res.status(201).json({ token, user });
     } catch (err) {

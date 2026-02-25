@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RoleBadge } from '@/components/common/RoleBadge';
 import type { UserRole, User } from '@/types';
 import api from '@/lib/api';
+import { toast } from 'sonner';
 import {
   Search,
   MoreHorizontal,
@@ -52,7 +53,9 @@ export function UsersPage() {
       if (selectedUser?.id === userId) {
         setSelectedUser({ ...selectedUser, isActive });
       }
+      toast.success(`User ${isActive ? 'activated' : 'banned'} successfully`);
     } catch (err) {
+      toast.error('Failed to change user status');
       console.error('Error updating user:', err);
     }
   };
@@ -64,8 +67,36 @@ export function UsersPage() {
       if (selectedUser?.id === userId) {
         setSelectedUser({ ...selectedUser, status: newStatus as User['status'] });
       }
+      toast.success(`Instructor application ${newStatus}`);
+      if (newStatus === 'approved') setShowActionModal(false);
     } catch (err) {
+      toast.error('Failed to update status');
       console.error('Error updating status:', err);
+    }
+  };
+
+  const handleChangeRole = async (userId: string, newRole: UserRole) => {
+    try {
+      await api.patch(`/users/${userId}`, { role: newRole });
+      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
+      if (selectedUser?.id === userId) {
+        setSelectedUser({ ...selectedUser, role: newRole });
+      }
+      toast.success(`Role changed to ${newRole}`);
+    } catch (err) {
+      toast.error('Failed to change role');
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm("Are you sure you want to completely delete this user? This action cannot be undone.")) return;
+    try {
+      await api.delete(`/users/${userId}`);
+      setUsers(users.filter(u => u.id !== userId));
+      setShowActionModal(false);
+      toast.success('User deleted successfully');
+    } catch (err) {
+      toast.error('Failed to delete user');
     }
   };
 
@@ -277,14 +308,22 @@ export function UsersPage() {
               )}
 
               <div className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = `mailto:${selectedUser.email}`}>
                   <Mail className="h-4 w-4 mr-2" />
                   Send Email
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Shield className="h-4 w-4 mr-2" />
-                  Change Role
-                </Button>
+                <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground cursor-pointer pointer-events-none" />
+                  <select
+                    className="w-full appearance-none pl-9 pr-4 py-2 h-9 rounded-md border border-input bg-background text-sm font-medium hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+                    value={selectedUser.role}
+                    onChange={(e) => handleChangeRole(selectedUser.id, e.target.value as UserRole)}
+                  >
+                    <option value="student" className="text-black bg-white">Role: Student</option>
+                    <option value="instructor" className="text-black bg-white">Role: Instructor</option>
+                    <option value="admin" className="text-black bg-white">Role: Admin</option>
+                  </select>
+                </div>
                 {selectedUser.isActive ? (
                   <Button
                     variant="outline"
@@ -325,7 +364,11 @@ export function UsersPage() {
                   </div>
                 )}
                 <div className="pt-4 border-t space-y-2 mt-2">
-                  <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() => handleDeleteUser(selectedUser.id)}
+                  >
                     <UserX className="h-4 w-4 mr-2" />
                     Delete Account
                   </Button>

@@ -11,7 +11,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown, Check, Info, AlertTriangle, XCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import api from '@/lib/api';
 
 interface NavbarProps {
   showSidebarToggle?: boolean;
@@ -22,6 +25,54 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      // Optional: Polling every 30 seconds for real-time feel
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.get('/notifications');
+      setNotifications(data);
+      setUnreadCount(data.filter((n: any) => !n.isRead).length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (unreadCount === 0) return;
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark read:', error);
+    }
+  };
+
+  const handleNotificationClick = async (notif: any) => {
+    if (!notif.isRead) {
+      try {
+        await api.patch(`/notifications/${notif.id || notif._id}/read`);
+        setNotifications(prev => prev.map(n =>
+          (n.id || n._id) === (notif.id || notif._id) ? { ...n, isRead: true } : n
+        ));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (error) { }
+    }
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -116,44 +167,54 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
           {isAuthenticated ? (
             <>
               {/* Notifications */}
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={(open) => { if (!open) fetchNotifications() }}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative rounded-full">
                     <Bell className="h-5 w-5" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="flex items-center justify-between px-4 py-2 border-b">
                     <span className="font-semibold text-sm">Notifications</span>
-                    <Badge variant="secondary" className="text-xs">3 new</Badge>
+                    {unreadCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">{unreadCount} new</Badge>
+                    )}
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-4 cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                        <span className="font-medium text-sm">New user signed up</span>
+                    {notifications.length > 0 ? notifications.map((notif: any) => (
+                      <DropdownMenuItem
+                        key={notif.id || notif._id}
+                        className={`flex flex-col items-start gap-1 p-4 cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                        onClick={() => handleNotificationClick(notif)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {notif.type === 'success' && <div className="w-2 h-2 bg-green-500 rounded-full" />}
+                          {notif.type === 'warning' && <div className="w-2 h-2 bg-amber-500 rounded-full" />}
+                          {notif.type === 'error' && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                          {notif.type === 'info' && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+                          {!['success', 'warning', 'error', 'info'].includes(notif.type) && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+                          <span className={`text-sm ${!notif.isRead ? 'font-bold' : 'font-medium'}`}>{notif.title}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-4 line-clamp-2">{notif.message}</span>
+                        <span className="text-[10px] text-muted-foreground ml-4 mt-1">
+                          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                        </span>
+                      </DropdownMenuItem>
+                    )) : (
+                      <div className="text-center py-6 text-sm text-muted-foreground">
+                        No notifications
                       </div>
-                      <span className="text-xs text-muted-foreground ml-4">2 minutes ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-4 cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        <span className="font-medium text-sm">System update completed</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground ml-4">1 hour ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-4 cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full" />
-                        <span className="font-medium text-sm">High server load detected</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground ml-4">3 hours ago</span>
-                    </DropdownMenuItem>
+                    )}
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="w-full text-center text-sm font-medium text-primary cursor-pointer justify-center py-3">
-                    View all notifications
+                  <DropdownMenuItem
+                    className="w-full text-center text-sm font-medium text-primary cursor-pointer justify-center py-3"
+                    onClick={markAllAsRead}
+                  >
+                    Mark all as read
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

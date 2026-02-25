@@ -13,6 +13,7 @@ import progressRoutes from './routes/progress.js';
 import discussionRoutes from './routes/discussions.js';
 import analyticsRoutes from './routes/analytics.js';
 import moduleRoutes from './routes/modules.js';
+import notificationRoutes from './routes/notifications.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -41,6 +42,7 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/discussions', discussionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/modules', moduleRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
