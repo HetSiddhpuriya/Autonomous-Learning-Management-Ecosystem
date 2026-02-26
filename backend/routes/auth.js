@@ -67,6 +67,9 @@ router.post('/login', async (req, res) => {
         if (role && user.role !== role)
             return res.status(401).json({ message: `No ${role} account found with this email` });
 
+        if (user.role === 'instructor' && user.status === 'rejected')
+            return res.status(403).json({ message: 'Your instructor application has been rejected by the admin.' });
+
         // Update lastActive
         user.lastActive = new Date();
         await user.save({ validateBeforeSave: false });
