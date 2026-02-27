@@ -40,6 +40,28 @@ router.post('/', protect, authorize('instructor', 'admin'), async (req, res) => 
     }
 });
 
+// PUT /api/lessons/reorder
+router.put('/reorder', protect, authorize('instructor', 'admin'), async (req, res) => {
+    try {
+        const { updates } = req.body;
+        if (!updates || !Array.isArray(updates)) {
+            return res.status(400).json({ message: 'updates array is required' });
+        }
+
+        const updatePromises = updates.map((update) => {
+            return Lesson.findByIdAndUpdate(update.id, {
+                order: update.order,
+                module: update.module
+            });
+        });
+
+        await Promise.all(updatePromises);
+        res.json({ message: 'Lessons reordered successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // PATCH /api/lessons/:id
 router.patch('/:id', protect, authorize('instructor', 'admin'), async (req, res) => {
     try {
