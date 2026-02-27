@@ -23,11 +23,12 @@ import {
   Camera,
   Save,
   Loader2,
+  WifiOff,
 } from 'lucide-react';
 
 export function SettingsPage() {
   const { user, updateUser } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isOfflineMode, toggleOfflineMode } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
@@ -345,6 +346,22 @@ export function SettingsPage() {
                   <Switch
                     checked={theme === 'dark'}
                     onCheckedChange={toggleTheme}
+                  />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="flex items-center gap-2">
+                      <WifiOff className="h-4 w-4" />
+                      Offline Mode
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      Toggle to display as offline
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isOfflineMode}
+                    onCheckedChange={toggleOfflineMode}
                   />
                 </div>
                 <Separator />

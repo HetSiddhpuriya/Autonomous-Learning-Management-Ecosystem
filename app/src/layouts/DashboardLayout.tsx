@@ -16,6 +16,7 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ allowedRoles }: DashboardLayoutProps) {
   const { user, isAuthenticated, updateUser } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [showRegForm, setShowRegForm] = useState(false);
   const [formData, setFormData] = useState<{
     primaryExpertise: string;
@@ -170,11 +171,16 @@ export function DashboardLayout({ allowedRoles }: DashboardLayoutProps) {
         onSidebarToggle={() => setSidebarOpen(!sidebarOpen)}
       />
       <div className="flex flex-1">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        />
         <main
           className={cn(
             'flex-1 transition-all duration-300',
-            'lg:ml-64'
+            isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
           )}
         >
           <div className="w-full mx-auto p-4 sm:p-6 lg:p-8 max-w-[1600px]">

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,8 +22,8 @@ import {
 } from 'lucide-react';
 
 export function UsersPage() {
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showActionModal, setShowActionModal] = useState(false);
@@ -39,10 +40,16 @@ export function UsersPage() {
     fetchUsers();
   }, []);
 
+  const pageRole = location.pathname.includes('/instructors')
+    ? 'instructor'
+    : location.pathname.includes('/students')
+      ? 'student'
+      : 'all';
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesRole = pageRole === 'all' || user.role === pageRole;
     return matchesSearch && matchesRole;
   });
 
@@ -114,9 +121,11 @@ export function UsersPage() {
       >
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
+            <h1 className="text-3xl font-bold">
+              {pageRole === 'instructor' ? 'Instructor' : pageRole === 'student' ? 'Student' : 'User'} Management
+            </h1>
             <p className="text-muted-foreground mt-1">
-              Manage platform users and permissions
+              Manage platform {pageRole === 'instructor' ? 'instructors' : pageRole === 'student' ? 'students' : 'users'} and permissions
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -143,22 +152,12 @@ export function UsersPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search users..."
+            placeholder={`Search ${pageRole === 'instructor' ? 'instructors' : pageRole === 'student' ? 'students' : 'users'}...`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
         </div>
-        <select
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
-          className="px-4 py-2 rounded-lg border bg-background"
-        >
-          <option value="all">All Roles</option>
-          <option value="student">Students</option>
-          <option value="instructor">Instructors</option>
-          <option value="admin">Admins</option>
-        </select>
       </motion.div>
 
       {/* Pending Users Table */}
@@ -421,12 +420,12 @@ export function UsersPage() {
         </motion.div>
       )}
 
-      {users.length === 0 && (
+      {filteredUsers.length === 0 && (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>
-          <p className="text-muted-foreground">No users found</p>
+          <p className="text-muted-foreground">No {pageRole === 'instructor' ? 'instructors' : pageRole === 'student' ? 'students' : 'users'} found</p>
         </div>
       )}
 

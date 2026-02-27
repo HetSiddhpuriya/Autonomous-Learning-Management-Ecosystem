@@ -54,9 +54,9 @@ export function AdminDashboard() {
   }, []);
 
   const totalUsers = users.length;
+  const activeInstructors = users.filter(u => u.role === 'instructor' && u.isActive && u.status === 'approved').length;
   const activeStudents = users.filter(u => u.role === 'student' && u.isActive).length;
   const totalCoursesCount = courses.length;
-  const coursesPublished = courses.filter(c => c.isPublished).length;
 
   const { dailyActiveUsers, trafficData } = mockPlatformAnalytics;
 
@@ -96,12 +96,20 @@ export function AdminDashboard() {
           delay={0.1}
         />
         <StatCard
+          title="Active Instructors"
+          value={activeInstructors.toLocaleString()}
+          change={4}
+          trend="up"
+          icon={Users}
+          delay={0.2}
+        />
+        <StatCard
           title="Active Students"
           value={activeStudents.toLocaleString()}
           change={12}
           trend="up"
           icon={Activity}
-          delay={0.2}
+          delay={0.3}
         />
         <StatCard
           title="Total Courses"
@@ -109,12 +117,6 @@ export function AdminDashboard() {
           change={5}
           trend="up"
           icon={GraduationCap}
-          delay={0.3}
-        />
-        <StatCard
-          title="Published Courses"
-          value={coursesPublished}
-          icon={CheckCircle2}
           delay={0.4}
         />
       </div>
@@ -225,7 +227,7 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Recent Users</CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/admin/users">
+                  <Link to="/admin/students">
                     View All
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </Link>

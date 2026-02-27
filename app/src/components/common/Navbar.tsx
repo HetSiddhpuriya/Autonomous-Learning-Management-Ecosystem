@@ -23,7 +23,7 @@ interface NavbarProps {
 
 export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
   const { user, logout, isAuthenticated } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isOfflineMode } = useTheme();
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -223,11 +223,17 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 px-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar} alt={user?.name} />
-                      <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="hidden sm:inline text-sm font-medium">{user?.name}</span>
+                    <div className="relative">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-[1.5px] border-background rounded-full ${isOfflineMode ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                    </div>
+                    <div className="hidden sm:flex flex-col items-start ml-1">
+                      <span className="text-sm font-bold leading-tight">{user?.name}</span>
+                      <span className="text-[10px] font-bold text-primary uppercase leading-tight">{user?.role}</span>
+                    </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>

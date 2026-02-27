@@ -6,12 +6,15 @@ interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  isOfflineMode: boolean;
+  toggleOfflineMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>('light');
+  const [isOfflineMode, setIsOfflineMode] = useState<boolean>(false);
 
   useEffect(() => {
     // Check for saved theme preference or system preference
@@ -20,6 +23,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setThemeState(savedTheme);
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       setThemeState('dark');
+    }
+
+    const savedOfflineMode = localStorage.getItem('learnflux-offline-mode');
+    if (savedOfflineMode) {
+      setIsOfflineMode(savedOfflineMode === 'true');
     }
   }, []);
 
@@ -31,6 +39,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('learnflux-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    localStorage.setItem('learnflux-offline-mode', String(isOfflineMode));
+  }, [isOfflineMode]);
+
   const toggleTheme = () => {
     setThemeState(prev => prev === 'light' ? 'dark' : 'light');
   };
@@ -39,8 +51,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(newTheme);
   };
 
+  const toggleOfflineMode = () => {
+    setIsOfflineMode(prev => !prev);
+  };
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, isOfflineMode, toggleOfflineMode }}>
       {children}
     </ThemeContext.Provider>
   );

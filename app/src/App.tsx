@@ -97,7 +97,8 @@ function App() {
               {/* Admin Routes */}
               <Route element={<DashboardLayout allowedRoles={['admin']} />}>
                 <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/users" element={<UsersPage />} />
+                <Route path="/admin/instructors" element={<UsersPage />} />
+                <Route path="/admin/students" element={<UsersPage />} />
                 <Route path="/admin/courses" element={<CoursesPage />} />
                 <Route path="/admin/analytics" element={<PlatformAnalyticsPage />} />
                 <Route path="/admin/settings" element={<SettingsPage />} />
