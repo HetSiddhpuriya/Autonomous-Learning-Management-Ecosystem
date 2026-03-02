@@ -26,10 +26,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     api.get('/auth/me')
-      .then(({ data }) => setUser(data.user))
+      .then(({ data }) => {
+        setUser(data.user);
+        // Instant heartbeat on restore
+        api.patch('/users/heartbeat').catch(() => { });
+      })
       .catch(() => localStorage.removeItem('lms_token'))
       .finally(() => setIsLoading(false));
   }, []);
+
+  // ── Heartbeat System ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+
+    // Send heartbeat immediately on login/mount
+    api.patch('/users/heartbeat').catch(() => { });
+
+    const interval = setInterval(() => {
+      api.patch('/users/heartbeat').catch(() => { });
+    }, 30000); // every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   // ── Login ─────────────────────────────────────────────────────────────────
   const login = useCallback(async (email: string, password: string, role: UserRole): Promise<{ success: boolean; message?: string }> => {
@@ -65,10 +83,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Logout ────────────────────────────────────────────────────────────────
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (user?.id) {
+      try {
+        await api.patch(`/users/${user.id}`, { isOnline: false });
+      } catch (err) {
+        console.error('Failed to notify offline status:', err);
+      }
+    }
     localStorage.removeItem('lms_token');
     setUser(null);
-  }, []);
+  }, [user]);
 
   // ── Update user locally (and optionally sync to API) ─────────────────────
   const updateUser = useCallback(async (updates: Partial<User>) => {

@@ -39,6 +39,7 @@ export function CreateCoursePage() {
     skillTags: [] as string[],
     newTag: '',
     thumbnail: '',
+    imageUrl: '',
     price: '',
     duration: '',
     durationUnit: 'minutes',
@@ -105,7 +106,7 @@ export function CreateCoursePage() {
         category: courseData.category === 'other' ? courseData.customCategory : courseData.category,
         difficulty: courseData.difficulty,
         skillTags: courseData.skillTags, // Fix: Changed tags to skillTags as defined in model/schema
-        thumbnail: courseData.thumbnail,
+        thumbnail: courseData.thumbnail || courseData.imageUrl,
         price: Number(courseData.price) || 0,
         duration: calculatedDuration,
         isPublished: false,
@@ -172,22 +173,42 @@ export function CreateCoursePage() {
       case 2:
         return (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Category *</Label>
-              <Select
-                value={courseData.category}
-                onValueChange={(value) => setCourseData(prev => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
-                  ))}
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Category & Difficulty side by side */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category *</Label>
+                <Select
+                  value={courseData.category}
+                  onValueChange={(value) => setCourseData(prev => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
+                    ))}
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Difficulty Level *</Label>
+                <Select
+                  value={courseData.difficulty}
+                  onValueChange={(value) => setCourseData(prev => ({ ...prev, difficulty: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {difficulties.map(diff => (
+                      <SelectItem key={diff.value} value={diff.value}>{diff.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {courseData.category === 'other' && (
@@ -202,21 +223,19 @@ export function CreateCoursePage() {
               </div>
             )}
 
+            {/* Image URL field */}
             <div className="space-y-2">
-              <Label>Difficulty Level *</Label>
-              <Select
-                value={courseData.difficulty}
-                onValueChange={(value) => setCourseData(prev => ({ ...prev, difficulty: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {difficulties.map(diff => (
-                    <SelectItem key={diff.value} value={diff.value}>{diff.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                type="url"
+                placeholder="https://example.com/course-image.jpg"
+                value={courseData.imageUrl}
+                onChange={(e) => setCourseData(prev => ({ ...prev, imageUrl: e.target.value }))}
+              />
+              <p className="text-sm text-muted-foreground">
+                Paste a direct URL to use as the course thumbnail image
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -338,41 +357,127 @@ export function CreateCoursePage() {
           </div>
         );
 
-      case 4:
+      case 4: {
+        const previewImage = courseData.thumbnail || courseData.imageUrl;
+        const displayCategory =
+          courseData.category === 'other'
+            ? courseData.customCategory
+            : courseData.category;
+        const difficultyColors: Record<string, string> = {
+          beginner: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+          intermediate: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+          advanced: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+        };
+        const diffColor = difficultyColors[courseData.difficulty] ?? 'bg-muted text-muted-foreground';
+
         return (
           <div className="space-y-6">
-            <div className="bg-muted rounded-lg p-6">
-              <h3 className="font-semibold mb-4">Course Summary</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Title</span>
-                  <span className="font-medium">{courseData.title}</span>
+            {/* ── Course Card Preview ── */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Course Preview
+              </p>
+              <div className="rounded-xl border shadow-sm overflow-hidden bg-card">
+                {/* Thumbnail */}
+                <div className="relative w-full h-44 bg-muted flex items-center justify-center overflow-hidden">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt="Course thumbnail"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <ImageIcon className="h-10 w-10" />
+                      <span className="text-xs">No image provided</span>
+                    </div>
+                  )}
+                  {/* Price badge */}
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold bg-white/90 dark:bg-black/70 text-foreground shadow">
+                    {Number(courseData.price) === 0 ? 'Free' : `₹${Number(courseData.price).toLocaleString('en-IN')}`}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium capitalize">{courseData.category === 'other' ? courseData.customCategory : courseData.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Price</span>
-                  <span className="font-medium">{Number(courseData.price) === 0 ? 'Free' : `₹${Number(courseData.price).toLocaleString('en-IN')}`}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-medium capitalize">{courseData.duration} {courseData.durationUnit}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Difficulty</span>
-                  <span className="font-medium capitalize">{courseData.difficulty}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Skills</span>
-                  <span className="font-medium">{courseData.skillTags.length} tags</span>
+
+                {/* Card body */}
+                <div className="p-4 space-y-3">
+                  {/* Category + Difficulty */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {displayCategory && (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary capitalize">
+                        {displayCategory}
+                      </span>
+                    )}
+                    {courseData.difficulty && (
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${diffColor}`}>
+                        {courseData.difficulty}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-bold text-base leading-snug line-clamp-2">
+                    {courseData.title || <span className="text-muted-foreground italic">Untitled Course</span>}
+                  </h3>
+
+                  {/* Description excerpt */}
+                  {courseData.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                      {courseData.description}
+                    </p>
+                  )}
+
+                  {/* Skills */}
+                  {courseData.skillTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {courseData.skillTags.slice(0, 5).map(tag => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded border text-[11px] font-medium bg-muted text-muted-foreground"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {courseData.skillTags.length > 5 && (
+                        <span className="px-2 py-0.5 rounded border text-[11px] font-medium bg-muted text-muted-foreground">
+                          +{courseData.skillTags.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Duration */}
+                  {courseData.duration && (
+                    <p className="text-xs text-muted-foreground">
+                      ⏱ {courseData.duration} {courseData.durationUnit}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* ── Summary table ── */}
+            <div className="bg-muted rounded-lg p-5">
+              <h3 className="font-semibold mb-4">Course Summary</h3>
+              <div className="space-y-3 text-sm">
+                {[
+                  ['Title', courseData.title],
+                  ['Category', displayCategory],
+                  ['Price', Number(courseData.price) === 0 ? 'Free' : `₹${Number(courseData.price).toLocaleString('en-IN')}`],
+                  ['Duration', `${courseData.duration} ${courseData.durationUnit}`],
+                  ['Difficulty', courseData.difficulty],
+                  ['Skills', `${courseData.skillTags.length} tags`],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium capitalize">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Ready to submit notice ── */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
                 <p className="font-medium text-blue-900 dark:text-blue-100">Ready to Submit?</p>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
@@ -382,6 +487,7 @@ export function CreateCoursePage() {
             </div>
           </div>
         );
+      }
 
       default:
         return null;

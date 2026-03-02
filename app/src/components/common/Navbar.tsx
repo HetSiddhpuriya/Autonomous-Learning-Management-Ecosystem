@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown, Check, Info, AlertTriangle, XCircle } from 'lucide-react';
+import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown, Check, Info, AlertTriangle, XCircle, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '@/lib/api';
@@ -122,13 +122,18 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
               </svg>
             </Button>
           )}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">L</span>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary via-primary/80 to-blue-400 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-200">
+              <Zap className="text-primary-foreground w-6 h-6 fill-primary-foreground/20" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              LearnFlux
-            </span>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent leading-none">
+                LearnFlux
+              </span>
+              <span className="text-[10px] font-bold text-muted-foreground tracking-[0.2em] uppercase mt-0.5 pl-0.5">
+                Ecosystem
+              </span>
+            </div>
           </Link>
         </div>
 

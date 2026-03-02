@@ -10,6 +10,7 @@ export interface User {
   createdAt: string;
   lastActive: string;
   isActive: boolean;
+  isOnline: boolean;
   status: 'pending' | 'approved' | 'rejected';
   primaryExpertise?: string;
   experienceLevel?: 'Beginner' | 'Intermediate' | 'Expert' | '';

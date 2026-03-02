@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema({
     organization: { type: String, default: '' },
     registrationComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    isOnline: { type: Boolean, default: false },
     lastActive: { type: Date, default: Date.now },
     wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }]
 }, { timestamps: true });

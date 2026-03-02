@@ -43,11 +43,30 @@ router.get('/all', protect, authorize('admin', 'instructor'), async (req, res) =
 router.get('/:courseId/content', async (req, res) => {
     try {
         const { courseId } = req.params;
-        const course = await Course.findById(courseId);
+        const course = await Course.findById(courseId).populate('instructorId', '-password');
 
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
+
+        // Fetch instructor stats
+        const instructorCourses = await Course.find({ instructorId: course.instructorId._id });
+        const totalInstructorCourses = instructorCourses.length;
+        const totalInstructorStudents = instructorCourses.reduce((sum, c) => sum + (c.enrolledStudents || 0), 0);
+
+        // Calculate average instructor rating
+        const coursesWithRatings = instructorCourses.filter(c => c.rating > 0);
+        const avgRating = coursesWithRatings.length > 0
+            ? (coursesWithRatings.reduce((sum, c) => sum + (c.rating || 0), 0) / coursesWithRatings.length).toFixed(1)
+            : '4.8'; // Default rating if none exist yet
+
+        // Add stats to the instructor object for the frontend
+        const instructorData = {
+            ...(course.instructorId.toObject ? course.instructorId.toObject() : course.instructorId),
+            totalCourses: totalInstructorCourses,
+            totalStudents: totalInstructorStudents,
+            avgRating: avgRating
+        };
 
         const modules = await Module.find({ courseId }).sort({ createdAt: 1 });
         const allLessons = await Lesson.find({ courseId }).sort({ order: 1 });
@@ -85,8 +104,12 @@ router.get('/:courseId/content', async (req, res) => {
         }
 
         res.json({
-            course,
-            modules: structuredModules
+            course: {
+                ...course.toJSON(),
+                instructorId: instructorData
+            },
+            modules: structuredModules,
+            instructor: instructorData
         });
     } catch (err) {
         console.error('Fetch course content error:', err);

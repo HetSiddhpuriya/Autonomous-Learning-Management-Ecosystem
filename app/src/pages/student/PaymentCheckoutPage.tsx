@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CreditCard, QrCode, Building2, MapPin, ChevronRight, ChevronDown, PenLine, Smartphone, Wallet } from 'lucide-react';
+import { CreditCard, QrCode, Building2, MapPin, ChevronRight, ChevronDown, PenLine, Smartphone, Wallet, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import type { Course } from '@/types';
+import { Link } from 'react-router-dom';
 
 export function PaymentCheckoutPage() {
     const { courseId } = useParams<{ courseId: string }>();
@@ -85,12 +86,19 @@ export function PaymentCheckoutPage() {
         <div className="min-h-screen bg-[#F5F7FA] text-slate-800 font-sans pb-20">
             {/* Top Header */}
             <header className="bg-white border-b sticky top-0 z-10 px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-3 text-2xl font-bold text-[#967657]">
-                    <div className="bg-[#A48261] text-white p-1.5 flex items-center justify-center w-8 h-8 rounded-sm">
-                        <span className="font-bold text-lg leading-none mt-0.5">L</span>
+                <Link to="/" className="flex items-center gap-2.5 group">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary via-primary/80 to-blue-400 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-200">
+                        <Zap className="text-primary-foreground w-5 h-5 fill-primary-foreground/20" />
                     </div>
-                    LearnFlux
-                </div>
+                    <div className="flex flex-col">
+                        <span className="text-lg font-black tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent leading-none">
+                            LearnFlux
+                        </span>
+                        <span className="text-[9px] font-bold text-muted-foreground tracking-[0.2em] uppercase mt-0.5 pl-0.5">
+                            Ecosystem
+                        </span>
+                    </div>
+                </Link>
 
                 <div className="hidden md:flex items-center gap-2 bg-slate-100 px-4 py-2 rounded-full text-sm font-medium">
                     <span className="text-slate-500">Complete your payment in</span>

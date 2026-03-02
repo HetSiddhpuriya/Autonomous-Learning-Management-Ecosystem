@@ -145,8 +145,14 @@ export function CourseDetailsPage() {
                             </div>
 
                             <div className="flex items-center gap-3 pt-2">
-                                <div className="h-10 w-10 rounded-full bg-slate-700 overflow-hidden">
-                                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`} alt="Instructor" className="h-full w-full object-cover" />
+                                <div className="h-10 w-10 rounded-full bg-slate-700 overflow-hidden ring-2 ring-slate-800">
+                                    <img
+                                        src={course.instructorId && typeof course.instructorId === 'object' && (course.instructorId as any).avatar
+                                            ? (course.instructorId as any).avatar
+                                            : `https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
+                                        alt="Instructor"
+                                        className="h-full w-full object-cover"
+                                    />
                                 </div>
                                 <div className="text-sm">
                                     <p className="text-slate-400">Created by</p>
@@ -237,21 +243,50 @@ export function CourseDetailsPage() {
                             {/* Instructor Info */}
                             <div>
                                 <h2 className="text-2xl font-bold mb-6 text-slate-900">Instructor</h2>
-                                <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-6">
-                                    <div className="h-24 w-24 rounded-full overflow-hidden shrink-0">
-                                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`} alt={course.instructorName} className="h-full w-full object-cover" />
-                                    </div>
-                                    <div className="space-y-3">
-                                        <h3 className="text-xl font-bold text-slate-900">{course.instructorName}</h3>
-                                        <p className="text-slate-500 font-medium">Senior Developer with 10+ years of experience</p>
+                                {course.instructorId && typeof course.instructorId === 'object' ? (
+                                    <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-6">
+                                        <div className="h-24 w-24 rounded-full overflow-hidden shrink-0 shadow-inner bg-slate-100">
+                                            <img
+                                                src={(course.instructorId as any).avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`}
+                                                alt={course.instructorName}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <h3 className="text-xl font-bold text-slate-900">{course.instructorName}</h3>
+                                            <p className="text-indigo-600 font-semibold text-sm uppercase tracking-wider">
+                                                {(course.instructorId as any).currentJobTitle && (course.instructorId as any).yearsOfExperience
+                                                    ? `${(course.instructorId as any).currentJobTitle} with ${(course.instructorId as any).yearsOfExperience}+ years of experience`
+                                                    : (course.instructorId as any).primaryExpertise || 'Certified Instructor'}
+                                            </p>
+                                            <p className="text-slate-600 text-sm leading-relaxed max-w-2xl">
+                                                {(course.instructorId as any).bio || `Expert instructor specializing in ${course.category || 'diverse subjects'}. Dedicated to helping students master new skills through practical, hands-on learning.`}
+                                            </p>
 
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
-                                            <span className="flex items-center gap-1.5"><Star className="h-4 w-4 text-amber-500 fill-current" /> 4.8 Instructor Rating</span>
-                                            <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> 15,070 Students</span>
-                                            <span className="flex items-center gap-1.5"><Play className="h-4 w-4" /> 12 Courses</span>
+                                            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700 pt-1">
+                                                <span className="flex items-center gap-1.5"><Star className="h-4 w-4 text-amber-500 fill-current" /> {(course.instructorId as any).avgRating || '4.8'} Instructor Rating</span>
+                                                <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> {(course.instructorId as any).totalStudents?.toLocaleString() || '0'} Students</span>
+                                                <span className="flex items-center gap-1.5"><Play className="h-4 w-4" /> {(course.instructorId as any).totalCourses || '1'} Courses</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="bg-white p-8 rounded-xl border border-slate-200 flex flex-col sm:flex-row gap-6">
+                                        <div className="h-24 w-24 rounded-full overflow-hidden shrink-0">
+                                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${course.instructorName}`} alt={course.instructorName} className="h-full w-full object-cover" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <h3 className="text-xl font-bold text-slate-900">{course.instructorName}</h3>
+                                            <p className="text-slate-500 font-medium whitespace-nowrap">Professional Instructor</p>
+
+                                            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
+                                                <span className="flex items-center gap-1.5"><Star className="h-4 w-4 text-amber-500 fill-current" /> 4.8 Instructor Rating</span>
+                                                <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> 15,070 Students</span>
+                                                <span className="flex items-center gap-1.5"><Play className="h-4 w-4" /> 12 Courses</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 

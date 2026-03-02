@@ -11,7 +11,38 @@ const router = express.Router();
 router.get('/', protect, authorize('admin'), async (req, res) => {
     try {
         const users = await User.find().select('-password').sort({ createdAt: -1 });
-        res.json(users);
+
+        // Real-time status detection:
+        // If a user hasn't had any activity (heartbeat) in the last 2 minutes,
+        // treat them as offline even if the isOnline flag is set.
+        const now = new Date();
+        const twoMinutesAgo = new Date(now.getTime() - 2 * 60 * 1000);
+
+        const updatedUsers = await Promise.all(users.map(async (u) => {
+            const lastActiveDate = new Date(u.lastActive);
+            if (u.isOnline && lastActiveDate < twoMinutesAgo) {
+                // Background update for consistency
+                u.isOnline = false;
+                await User.findByIdAndUpdate(u._id, { isOnline: false });
+                return { ...u.toJSON(), isOnline: false };
+            }
+            return u.toJSON();
+        }));
+
+        res.json(updatedUsers);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// PATCH /api/users/heartbeat - Update online status and last active time
+router.patch('/heartbeat', protect, async (req, res) => {
+    try {
+        await User.findByIdAndUpdate(req.user._id, {
+            isOnline: true,
+            lastActive: new Date()
+        });
+        res.json({ status: 'ok' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

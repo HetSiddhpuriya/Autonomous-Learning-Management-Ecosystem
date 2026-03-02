@@ -85,7 +85,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           const coursesData = coursesRes.data || [];
           setAdminStats({
             totalUsers: usersData.length,
-            activeNow: usersData.filter((u: any) => u.isActive && (u.role !== 'instructor' || u.status === 'approved')).length,
+            activeNow: usersData.filter((u: any) => u.isOnline).length,
             activeCourses: coursesData.filter((c: any) => c.isPublished).length
           });
         } catch (error) {

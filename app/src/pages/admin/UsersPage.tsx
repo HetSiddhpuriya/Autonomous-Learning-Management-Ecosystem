@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -38,6 +39,10 @@ export function UsersPage() {
       }
     }
     fetchUsers();
+
+    // Poll for real-time online status updates every 10 seconds
+    const interval = setInterval(fetchUsers, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const pageRole = location.pathname.includes('/instructors')
@@ -191,10 +196,16 @@ export function UsersPage() {
                       >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{user.name[0]}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                              <Avatar>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback>{user.name[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className={cn(
+                                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                                user.isOnline ? "bg-green-500" : "bg-slate-400"
+                              )} />
+                            </div>
                             <div>
                               <p className="font-medium">{user.name}</p>
                               <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -273,10 +284,16 @@ export function UsersPage() {
                       >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{user.name[0]}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                              <Avatar>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback>{user.name[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className={cn(
+                                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                                user.isOnline ? "bg-green-500" : "bg-slate-400"
+                              )} />
+                            </div>
                             <div>
                               <p className="font-medium">{user.name}</p>
                               <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -287,10 +304,16 @@ export function UsersPage() {
                           <RoleBadge role={user.role} />
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col gap-1 items-start">
-                            <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <Badge variant={user.isActive ? 'default' : 'secondary'} className={user.isActive ? "bg-green-100 text-green-700 hover:bg-green-100 border-none px-2 py-0" : ""}>
                               {user.isActive ? 'Active' : 'Inactive'}
                             </Badge>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-muted/50 text-[10px] font-bold uppercase tracking-wider">
+                              <span className={cn("h-1.5 w-1.5 rounded-full", user.isOnline ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
+                              <span className={user.isOnline ? "text-green-600" : "text-muted-foreground"}>
+                                {user.isOnline ? 'Online' : 'Offline'}
+                              </span>
+                            </div>
                           </div>
                         </td>
                         <td className="p-4 py-2">
@@ -363,10 +386,16 @@ export function UsersPage() {
                       >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={user.avatar} />
-                              <AvatarFallback>{user.name[0]}</AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                              <Avatar>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback>{user.name[0]}</AvatarFallback>
+                              </Avatar>
+                              <span className={cn(
+                                "absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-background",
+                                user.isOnline ? "bg-green-500" : "bg-slate-400"
+                              )} />
+                            </div>
                             <div>
                               <p className="font-medium">{user.name}</p>
                               <p className="text-sm text-muted-foreground">{user.email}</p>
