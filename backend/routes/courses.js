@@ -195,7 +195,15 @@ router.post('/:id/enroll', protect, authorize('student'), async (req, res) => {
         const existing = await Enrollment.findOne({ studentId: req.user._id, courseId: course._id });
         if (existing) return res.status(400).json({ message: 'Already enrolled' });
 
-        await Enrollment.create({ studentId: req.user._id, courseId: course._id });
+        const { transactionId, paymentMethod, amount } = req.body;
+
+        await Enrollment.create({
+            studentId: req.user._id,
+            courseId: course._id,
+            transactionId,
+            paymentMethod,
+            amount: amount || course.price
+        });
         await Course.findByIdAndUpdate(course._id, { $inc: { enrolledStudents: 1 } });
 
         // Notify Instructor
@@ -219,6 +227,18 @@ router.get('/enrolled/my', protect, authorize('student'), async (req, res) => {
         const enrollments = await Enrollment.find({ studentId: req.user._id }).populate('courseId');
         const courses = enrollments.map(e => e.courseId);
         res.json(courses);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// GET /api/courses/transactions/my - Student's transaction history
+router.get('/transactions/my', protect, authorize('student'), async (req, res) => {
+    try {
+        const transactions = await Enrollment.find({ studentId: req.user._id })
+            .populate('courseId')
+            .sort({ enrolledAt: -1 });
+        res.json(transactions);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

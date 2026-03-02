@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { jsPDF } from 'jspdf';
 import {
   User,
   Mail,
@@ -24,6 +25,10 @@ import {
   Save,
   Loader2,
   WifiOff,
+  CreditCard,
+  Download,
+  Receipt,
+  Search,
 } from 'lucide-react';
 
 export function SettingsPage() {
@@ -50,6 +55,74 @@ export function SettingsPage() {
     email: user?.email || '',
     avatar: user?.avatar || '',
   });
+
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      setIsLoadingTransactions(true);
+      try {
+        const response = await api.get('/courses/transactions/my');
+        setTransactions(response.data);
+      } catch (err) {
+        console.error('Failed to fetch transactions:', err);
+      } finally {
+        setIsLoadingTransactions(false);
+      }
+    };
+    fetchTransactions();
+  }, []);
+
+  const downloadReceipt = (transaction: any) => {
+    const doc = new jsPDF();
+    const date = new Date(transaction.enrolledAt).toLocaleDateString();
+
+    // Header
+    doc.setFillColor(245, 247, 250);
+    doc.rect(0, 0, 210, 40, 'F');
+    doc.setTextColor(225, 29, 72);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LEARNFLUX', 105, 20, { align: 'center' });
+    doc.setFontSize(10);
+    doc.setTextColor(100, 116, 139);
+    doc.text('OFFICIAL TRANSACTION RECEIPT', 105, 30, { align: 'center' });
+
+    // Order Info
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(12);
+    doc.text('TRANSACTION DETAILS', 20, 55);
+    doc.setLineWidth(0.5);
+    doc.line(20, 58, 190, 58);
+
+    const details = [
+      ['Transaction ID:', transaction.transactionId || 'N/A'],
+      ['Date:', date],
+      ['Student Name:', user?.name || 'Student'],
+      ['Course Title:', transaction.courseId?.title || 'Course'],
+      ['Payment Method:', (transaction.paymentMethod || 'UPI').toUpperCase()],
+    ];
+
+    let y = 70;
+    details.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, 20, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(String(value), 70, y);
+      y += 10;
+    });
+
+    doc.setFillColor(248, 250, 252);
+    doc.rect(20, y + 5, 170, 25, 'F');
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL AMOUNT PAID:', 30, y + 21);
+    doc.setTextColor(5, 150, 105);
+    doc.text(`INR ${transaction.amount?.toLocaleString('en-IN') || '4,999.00'}`, 180, y + 21, { align: 'right' });
+
+    doc.save(`LearnFlux_Receipt_${transaction.transactionId || 'TXN'}.pdf`);
+  };
 
   useEffect(() => {
     if (user) {
@@ -134,10 +207,11 @@ export function SettingsPage() {
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
+            <TabsTrigger value="transactions">Transactions</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -323,60 +397,84 @@ export function SettingsPage() {
             </Card>
           </TabsContent>
 
-          {/* Preferences Tab */}
-          <TabsContent value="preferences" className="space-y-6">
+          {/* Transactions Tab */}
+          <TabsContent value="transactions" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>
-                  Customize your learning experience
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Transaction History</CardTitle>
+                    <CardDescription>
+                      View and download receipts for your purchased courses
+                    </CardDescription>
+                  </div>
+                  <Receipt className="h-8 w-8 text-muted-foreground opacity-20" />
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="flex items-center gap-2">
-                      <Moon className="h-4 w-4" />
-                      Dark Mode
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Toggle between light and dark themes
-                    </p>
+              <CardContent>
+                {isLoadingTransactions ? (
+                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Loading your transactions...</p>
                   </div>
-                  <Switch
-                    checked={theme === 'dark'}
-                    onCheckedChange={toggleTheme}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="flex items-center gap-2">
-                      <WifiOff className="h-4 w-4" />
-                      Offline Mode
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Toggle to display as offline
-                    </p>
+                ) : transactions.length > 0 ? (
+                  <div className="rounded-xl border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50 border-b text-slate-500 font-medium">
+                        <tr>
+                          <th className="text-left py-3 px-4 uppercase tracking-wider text-[10px]">Course</th>
+                          <th className="text-left py-3 px-4 uppercase tracking-wider text-[10px]">Date</th>
+                          <th className="text-left py-3 px-4 uppercase tracking-wider text-[10px]">Method</th>
+                          <th className="text-right py-3 px-4 uppercase tracking-wider text-[10px]">Amount</th>
+                          <th className="text-right py-3 px-4 uppercase tracking-wider text-[10px]">Receipt</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {transactions.map((transaction) => (
+                          <tr key={transaction.id} className="hover:bg-slate-50/50 transition-colors">
+                            <td className="py-4 px-4 font-semibold text-slate-800">
+                              {transaction.courseId?.title || 'Unknown Course'}
+                            </td>
+                            <td className="py-4 px-4 text-slate-500">
+                              {new Date(transaction.enrolledAt).toLocaleDateString()}
+                            </td>
+                            <td className="py-4 px-4">
+                              <Badge variant="outline" className="uppercase text-[10px]">
+                                {transaction.paymentMethod || 'UPI'}
+                              </Badge>
+                            </td>
+                            <td className="py-4 px-4 text-right font-bold">
+                              ₹{transaction.amount?.toLocaleString('en-IN') || '4,999.00'}
+                            </td>
+                            <td className="py-4 px-4 text-right">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                onClick={() => downloadReceipt(transaction)}
+                              >
+                                <Download className="h-4 w-4 text-primary" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <Switch
-                    checked={isOfflineMode}
-                    onCheckedChange={toggleOfflineMode}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Language
-                    </Label>
-                    <p className="text-sm text-muted-foreground">
-                      Select your preferred language
+                ) : (
+                  <div className="text-center py-12 bg-slate-50/50 rounded-xl border border-dashed">
+                    <div className="bg-white p-3 rounded-full w-fit mx-auto shadow-sm border mb-4">
+                      <CreditCard className="h-6 w-6 text-slate-300" />
+                    </div>
+                    <h4 className="font-bold text-slate-800">No Transactions Found</h4>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-[250px] mx-auto">
+                      You haven't purchased any paid courses yet.
                     </p>
+                    <Button variant="outline" size="sm" className="mt-4" asChild>
+                      <a href="/courses">Browse Courses</a>
+                    </Button>
                   </div>
-                  <Badge variant="outline">English (US)</Badge>
-                </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

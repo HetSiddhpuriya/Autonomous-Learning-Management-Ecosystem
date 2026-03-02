@@ -22,6 +22,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Receipt,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ const studentNavItems: NavItem[] = [
   { label: 'My Courses', href: '/student/courses', icon: BookOpen },
   { label: 'Recommendations', href: '/student/recommendations', icon: Lightbulb },
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
+  { label: 'Transactions', href: '/student/transactions', icon: Receipt },
   { label: 'Wishlist', href: '/student/wishlist', icon: Heart },
   { label: 'Discussions', href: '/student/discussions', icon: MessageSquare },
   { label: 'Settings', href: '/student/settings', icon: Settings },
@@ -72,6 +74,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
   const location = useLocation();
 
   const [adminStats, setAdminStats] = useState({ totalUsers: 0, activeNow: 0, activeCourses: 0 });
+  const [studentStats, setStudentStats] = useState({ activeCourses: 0, totalSpent: 0 });
 
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -94,6 +97,22 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       };
 
       fetchAdminStats();
+    } else if (user?.role === 'student') {
+      const fetchStudentStats = async () => {
+        try {
+          const [coursesRes, transRes] = await Promise.all([
+            api.get('/courses/enrolled/my'),
+            api.get('/courses/transactions/my')
+          ]);
+          setStudentStats({
+            activeCourses: coursesRes.data.length,
+            totalSpent: transRes.data.reduce((sum: number, t: any) => sum + (t.amount || 0), 0)
+          });
+        } catch (error) {
+          console.error('Failed to fetch student stats:', error);
+        }
+      };
+      fetchStudentStats();
     }
   }, [user?.role]);
 
@@ -181,12 +200,12 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                   {user?.role === 'student' && (
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Streak</span>
-                        <span className="font-medium">12 days</span>
+                        <span className="text-muted-foreground">Courses</span>
+                        <span className="font-medium text-emerald-600 font-bold">{studentStats.activeCourses} active</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Courses</span>
-                        <span className="font-medium">3 active</span>
+                        <span className="text-muted-foreground">Total Spent</span>
+                        <span className="font-bold">₹{studentStats.totalSpent.toLocaleString('en-IN')}</span>
                       </div>
                     </div>
                   )}

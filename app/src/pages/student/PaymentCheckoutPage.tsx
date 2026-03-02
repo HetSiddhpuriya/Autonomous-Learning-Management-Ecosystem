@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CreditCard, QrCode, Building2, MapPin, ChevronRight, ChevronDown, PenLine, Smartphone, Wallet, Zap } from 'lucide-react';
+import { CreditCard, QrCode, Building2, MapPin, ChevronRight, ChevronDown, PenLine, Smartphone, Wallet, Zap, Clock, Shield, CheckCircle2, Download, Loader2, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -20,6 +21,20 @@ export function PaymentCheckoutPage() {
     const [timeLeft, setTimeLeft] = useState(6 * 60 + 31); // 06:31
     const [paymentMethod, setPaymentMethod] = useState('upi');
     const [showQr, setShowQr] = useState(false);
+    const [upiId, setUpiId] = useState('');
+    const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle');
+    const [transactionId, setTransactionId] = useState('');
+    const [cardDetails, setCardDetails] = useState({
+        number: '',
+        expiry: '',
+        cvv: '',
+        name: ''
+    });
+
+    const handleCardInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setCardDetails(prev => ({ ...prev, [name]: value }));
+    };
 
     useEffect(() => {
         if (!user) {
@@ -62,12 +77,89 @@ export function PaymentCheckoutPage() {
 
     const handlePayment = async () => {
         try {
-            await api.post(`/courses/${courseId}/enroll`);
+            setPaymentStatus('processing');
+            // Simulate payment processing time
+            await new Promise(resolve => setTimeout(resolve, 3000));
+
+            const tid = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
+            await api.post(`/courses/${courseId}/enroll`, {
+                transactionId: tid,
+                paymentMethod: paymentMethod,
+                amount: course?.price || 4999
+            });
+
+            setTransactionId(tid);
+            setPaymentStatus('success');
             toast.success('Payment successful! You are now enrolled.');
-            navigate('/student/courses');
         } catch (error: any) {
+            setPaymentStatus('idle');
             toast.error(error.response?.data?.message || 'Payment failed');
         }
+    };
+
+    const downloadReceipt = () => {
+        const doc = new jsPDF();
+        const date = new Date().toLocaleDateString();
+        const time = new Date().toLocaleTimeString();
+
+        // Header
+        doc.setFillColor(245, 247, 250);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(225, 29, 72); // rose-600
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('LEARNFLUX', 105, 20, { align: 'center' });
+        doc.setFontSize(10);
+        doc.setTextColor(100, 116, 139); // slate-500
+        doc.text('OFFICIAL TRANSACTION RECEIPT', 105, 30, { align: 'center' });
+
+        // Order Info
+        doc.setTextColor(30, 41, 59); // slate-800
+        doc.setFontSize(12);
+        doc.text('TRANSACTION DETAILS', 20, 55);
+        doc.setLineWidth(0.5);
+        doc.line(20, 58, 190, 58);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+
+        const details = [
+            ['Transaction ID:', transactionId],
+            ['Date:', `${date} ${time}`],
+            ['Student Name:', user?.name || 'Student'],
+            ['Student Email:', user?.email || 'N/A'],
+            ['Course Title:', course?.title || 'Course'],
+            ['Category:', course?.category || 'Education'],
+            ['Payment Method:', paymentMethod.replace('_', ' ').toUpperCase()],
+        ];
+
+        let y = 70;
+        details.forEach(([label, value]) => {
+            doc.setFont('helvetica', 'bold');
+            doc.text(label, 20, y);
+            doc.setFont('helvetica', 'normal');
+            doc.text(String(value), 70, y);
+            y += 10;
+        });
+
+        // Amount Box
+        doc.setFillColor(248, 250, 252);
+        doc.rect(20, y + 5, 170, 25, 'F');
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('TOTAL AMOUNT PAID:', 30, y + 21);
+        doc.setTextColor(5, 150, 105); // emerald-600
+        doc.text(`INR ${price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, 180, y + 21, { align: 'right' });
+
+        // Footer
+        doc.setTextColor(148, 163, 184); // slate-400
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        doc.text('This is a computer-generated receipt and does not require a physical signature.', 105, 280, { align: 'center' });
+        doc.text('thank you for choosing LearnFlux - your gateway to mastery.', 105, 285, { align: 'center' });
+
+        doc.save(`LearnFlux_Receipt_${transactionId}.pdf`);
     };
 
     if (loading) {
@@ -198,52 +290,171 @@ export function PaymentCheckoutPage() {
                                     {/* Action Area */}
                                     <div className="w-full md:w-2/3 md:pl-8 md:border-l border-slate-100">
                                         {paymentMethod === 'upi' && (
-                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col md:flex-row items-center gap-8 justify-between h-full py-4">
-                                                <div className="space-y-4 max-w-[200px]">
-                                                    <h4 className="font-bold text-slate-800">Scan QR code</h4>
-                                                    <p className="text-sm text-slate-500">1. Open any UPI or banking app on your phone</p>
-                                                    <p className="text-sm text-slate-500">2. Scan the QR code to pay</p>
+                                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full py-4 space-y-8">
+                                                {/* QR Code Section */}
+                                                <div className="flex flex-col md:flex-row items-center gap-8 justify-between">
+                                                    <div className="space-y-4 max-w-[200px]">
+                                                        <h4 className="font-bold text-slate-800">Scan QR code</h4>
+                                                        <p className="text-sm text-slate-500 text-xs">Open any UPI app like GPay, PhonePe, or Paytm and scan the code.</p>
 
-                                                    <div className="flex gap-2 pt-4">
-                                                        <div className="h-6 w-8 bg-slate-100 rounded border flex items-center justify-center text-[10px] font-bold text-slate-600">GPay</div>
-                                                        <div className="h-6 w-8 bg-indigo-50 rounded border border-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">PhPe</div>
-                                                        <div className="h-6 w-8 bg-sky-50 rounded border border-sky-100 flex items-center justify-center text-[10px] font-bold text-sky-700">Paytm</div>
+                                                        <div className="flex gap-2 pt-2">
+                                                            <div className="h-5 w-7 bg-slate-50 rounded border flex items-center justify-center text-[8px] font-bold text-slate-500 uppercase">GPay</div>
+                                                            <div className="h-5 w-7 bg-indigo-50/50 rounded border border-indigo-100/50 flex items-center justify-center text-[8px] font-bold text-indigo-500 uppercase">PhPe</div>
+                                                            <div className="h-5 w-7 bg-sky-50/50 rounded border border-sky-100/50 flex items-center justify-center text-[8px] font-bold text-sky-500 uppercase">Paytm</div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="relative group border border-slate-200 p-2 rounded-xl bg-white shadow-sm overflow-hidden shrink-0">
+                                                        <QrCode className={`w-28 h-28 transition-all duration-300 ${!showQr ? 'text-slate-200 blur-sm' : 'text-slate-800'}`} />
+                                                        {!showQr ? (
+                                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => setShowQr(true)}
+                                                                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 text-xs h-8"
+                                                                >
+                                                                    Show QR
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-white/60 backdrop-blur-sm rounded-xl">
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={handlePayment}
+                                                                    className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20 text-xs h-8"
+                                                                >
+                                                                    Simulate
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
-                                                <div className="relative group border border-slate-200 p-2 rounded-xl bg-white shadow-sm overflow-hidden">
-                                                    <QrCode className={`w-32 h-32 transition-all duration-300 ${!showQr ? 'text-slate-300 blur-sm' : 'text-slate-800'}`} />
+                                                {/* Separator */}
+                                                <div className="relative">
+                                                    <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-100"></span></div>
+                                                    <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-widest leading-none bg-white px-2 text-slate-400">OR</div>
+                                                </div>
 
-                                                    {!showQr ? (
-                                                        <div className="absolute inset-0 flex items-center justify-center">
-                                                            <Button
-                                                                onClick={() => setShowQr(true)}
-                                                                className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20"
-                                                            >
-                                                                Show QR Code
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity bg-white/60 backdrop-blur-sm rounded-xl">
-                                                            <Button
-                                                                onClick={handlePayment}
-                                                                className="bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/20"
-                                                            >
-                                                                Simulate
-                                                            </Button>
-                                                        </div>
-                                                    )}
+                                                {/* UPI ID Section */}
+                                                <div className="space-y-4">
+                                                    <h4 className="font-bold text-slate-800">Pay via UPI ID</h4>
+                                                    <div className="relative">
+                                                        <input
+                                                            type="text"
+                                                            placeholder="example@upi"
+                                                            value={upiId}
+                                                            onChange={(e) => setUpiId(e.target.value)}
+                                                            className="w-full p-3 pl-10 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm outline-none bg-slate-50/30 font-medium"
+                                                        />
+                                                        <Smartphone className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                                                    </div>
+                                                    <Button
+                                                        size="lg"
+                                                        className="bg-red-600 hover:bg-red-700 w-full text-white font-bold shadow-lg shadow-red-600/20"
+                                                        onClick={handlePayment}
+                                                        disabled={!upiId.includes('@') || upiId.length < 5}
+                                                    >
+                                                        Verify & Pay ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </Button>
                                                 </div>
                                             </motion.div>
                                         )}
 
-                                        {paymentMethod !== 'upi' && (
+                                        {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
+                                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="h-full py-2">
+                                                <div className="space-y-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <h4 className="font-bold text-slate-800 uppercase tracking-tight text-sm">Card Information</h4>
+                                                        <div className="flex gap-1">
+                                                            <div className="w-8 h-5 bg-slate-100 rounded border border-slate-200"></div>
+                                                            <div className="w-8 h-5 bg-slate-100 rounded border border-slate-200"></div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-3">
+                                                        <div className="relative">
+                                                            <input
+                                                                type="text"
+                                                                name="name"
+                                                                placeholder="Cardholder Name"
+                                                                value={cardDetails.name}
+                                                                onChange={handleCardInput}
+                                                                className="w-full p-3 pl-10 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm outline-none bg-slate-50/30"
+                                                            />
+                                                            <PenLine className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                                                        </div>
+
+                                                        <div className="relative">
+                                                            <input
+                                                                type="text"
+                                                                name="number"
+                                                                placeholder="Card Number"
+                                                                value={cardDetails.number}
+                                                                onChange={(e) => {
+                                                                    const val = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim().slice(0, 19);
+                                                                    setCardDetails(prev => ({ ...prev, number: val }));
+                                                                }}
+                                                                className="w-full p-3 pl-10 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm outline-none bg-slate-50/30 font-mono tracking-wider"
+                                                            />
+                                                            <CreditCard className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="text"
+                                                                    name="expiry"
+                                                                    placeholder="MM/YY"
+                                                                    value={cardDetails.expiry}
+                                                                    onChange={(e) => {
+                                                                        let val = e.target.value.replace(/\D/g, '');
+                                                                        if (val.length > 2) val = val.slice(0, 2) + '/' + val.slice(2, 4);
+                                                                        setCardDetails(prev => ({ ...prev, expiry: val.slice(0, 5) }));
+                                                                    }}
+                                                                    className="w-full p-3 pl-10 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm outline-none bg-slate-50/30"
+                                                                />
+                                                                <Clock className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                                                            </div>
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="password"
+                                                                    name="cvv"
+                                                                    placeholder="CVV"
+                                                                    value={cardDetails.cvv}
+                                                                    onChange={(e) => {
+                                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 3);
+                                                                        setCardDetails(prev => ({ ...prev, cvv: val }));
+                                                                    }}
+                                                                    className="w-full p-3 pl-10 rounded-lg border border-slate-200 focus:border-red-500 focus:ring-1 focus:ring-red-500 transition-all text-sm outline-none bg-slate-50/30"
+                                                                />
+                                                                <Shield className="absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <Button
+                                                        size="lg"
+                                                        className="bg-red-600 hover:bg-red-700 w-full mt-4 text-white font-bold shadow-lg shadow-red-600/20"
+                                                        onClick={handlePayment}
+                                                        disabled={!cardDetails.name || !cardDetails.number || !cardDetails.expiry || !cardDetails.cvv}
+                                                    >
+                                                        Pay ₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </Button>
+                                                    <p className="text-[10px] text-center text-slate-400 flex items-center justify-center gap-1">
+                                                        <Shield className="h-3 w-3" /> Secure SSL Encrypted Transaction
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+
+                                        {paymentMethod === 'net_banking' && (
                                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center h-full space-y-6 py-12 text-center">
                                                 <div className="p-4 bg-slate-50 rounded-full">
                                                     <Wallet className="w-12 h-12 text-slate-300" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 text-lg mb-2">Proceed with {paymentMethod.replace('_', ' ')}</h4>
+                                                    <h4 className="font-bold text-slate-800 text-lg mb-2">Proceed with Net Banking</h4>
                                                     <p className="text-sm text-slate-500 max-w-[250px] mx-auto">You will be securely redirected to the payment gateway to complete your transaction.</p>
                                                 </div>
                                                 <Button size="lg" className="bg-red-600 hover:bg-red-700 w-full max-w-xs" onClick={handlePayment}>
@@ -306,6 +517,118 @@ export function PaymentCheckoutPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Processing Modal Overlay */}
+            {paymentStatus === 'processing' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6"
+                    >
+                        <div className="relative w-20 h-20 mx-auto">
+                            <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+                            <motion.div
+                                className="absolute inset-0 border-4 border-red-600 rounded-full border-t-transparent"
+                                animate={{ rotate: 360 }}
+                                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            ></motion.div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <Shield className="h-8 w-8 text-red-600" />
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800">Processing Payment</h3>
+                            <p className="text-sm text-slate-500 mt-2">Please do not refresh or close the window. We are securely communicating with your bank.</p>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Verifying Transaction
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* Success View Overlay */}
+            {paymentStatus === 'success' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F5F7FA]">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-2xl w-full px-4"
+                    >
+                        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+                            <div className="bg-emerald-600 p-12 text-center text-white relative">
+                                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                                    <Zap className="w-full h-full -rotate-12 scale-150" />
+                                </div>
+                                <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: "spring", damping: 12 }}
+                                    className="bg-white/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-md"
+                                >
+                                    <CheckCircle2 className="h-12 w-12 text-white" />
+                                </motion.div>
+                                <h2 className="text-3xl font-black tracking-tight">Payment Successful!</h2>
+                                <p className="text-emerald-100 mt-2 text-lg font-medium">Welcome to the course, {user?.name?.split(' ')[0]}</p>
+                            </div>
+
+                            <div className="p-8">
+                                <div className="grid grid-cols-2 gap-8 mb-8">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Transaction ID</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-mono font-bold text-slate-700">{transactionId}</p>
+                                            <button className="text-slate-300 hover:text-primary transition-colors">
+                                                <Copy className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Date & Time</p>
+                                        <p className="font-bold text-slate-700">{new Date().toLocaleDateString()} • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Payment Method</p>
+                                        <p className="font-bold text-emerald-600 uppercase text-sm">{paymentMethod.replace('_', ' ')}</p>
+                                    </div>
+                                    <div className="space-y-1 text-right">
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</p>
+                                        <p className="text-xl font-black text-slate-800">₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex items-center gap-4 mb-8">
+                                    <img src={course.thumbnail} className="w-20 h-14 rounded-lg object-cover shadow-sm" />
+                                    <div>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Purchased Course</p>
+                                        <h4 className="font-bold text-slate-800 line-clamp-1">{course.title}</h4>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <Button
+                                        onClick={downloadReceipt}
+                                        variant="outline"
+                                        className="flex-1 h-12 rounded-xl font-bold gap-2 border-2 hover:bg-slate-50"
+                                    >
+                                        <Download className="h-4 w-4" /> Download Receipt
+                                    </Button>
+                                    <Button
+                                        onClick={() => navigate('/student/courses')}
+                                        className="flex-1 h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800"
+                                    >
+                                        Start Learning
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-center mt-6 text-sm text-slate-500">
+                            A copy of the receipt was sent to <b>{user?.email}</b>
+                        </p>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }
