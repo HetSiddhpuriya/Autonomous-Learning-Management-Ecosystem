@@ -23,6 +23,7 @@ import {
 export function QuestionBankPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
+  const [selectedModule, setSelectedModule] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState('all');
 
@@ -38,6 +39,8 @@ export function QuestionBankPage() {
     skillMapped: '',
     explanation: ''
   });
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCoursesAndQuizzes = async () => {
@@ -63,11 +66,19 @@ export function QuestionBankPage() {
     }))
   );
 
+  const availableModules = Array.from(new Set(
+    allQuestions
+      .filter(q => selectedCourse === 'all' || q.courseId === selectedCourse)
+      .map(q => q.skillMapped)
+      .filter(Boolean)
+  )).sort();
+
   const filteredQuestions = allQuestions.filter(q => {
     const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse = selectedCourse === 'all' || q.courseId === selectedCourse;
+    const matchesModule = selectedModule === 'all' || q.skillMapped === selectedModule;
     const matchesDifficulty = difficultyFilter === 'all' || q.difficulty === difficultyFilter;
-    return matchesSearch && matchesCourse && matchesDifficulty;
+    return matchesSearch && matchesCourse && matchesModule && matchesDifficulty;
   });
 
   const getDifficultyColor = (difficulty: string) => {
@@ -80,6 +91,76 @@ export function QuestionBankPage() {
         return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
       default:
         return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const openEditModal = (question: any) => {
+    setNewQuestionData({
+      courseId: question.courseId || '',
+      difficulty: question.difficulty || 'medium',
+      question: question.question || '',
+      options: question.options || ['', '', '', ''],
+      correctAnswer: question.correctAnswer || 0,
+      skillMapped: question.skillMapped || '',
+      explanation: question.explanation || ''
+    });
+    setEditingQuestionId(question._id || question.id);
+    setEditingQuizId(question.quizId);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteQuestion = async (quizId: string, questionId: string) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+    try {
+      const quiz = quizzes.find(q => (q._id || q.id) === quizId);
+      if (!quiz) return;
+
+      const newQuestions = quiz.questions.filter((q: any) => (q._id || q.id) !== questionId && q.id !== questionId);
+
+      await api.patch(`/quizzes/${quizId}`, { questions: newQuestions });
+
+      setQuizzes(prev => prev.map(q => (q._id || q.id) === quizId ? { ...q, questions: newQuestions } : q));
+      toast.success('Question deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete question');
+      console.error(error);
+    }
+  };
+
+  const handleSubmitQuestion = async () => {
+    if (!newQuestionData.question || newQuestionData.options.some(o => !o)) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingQuestionId && editingQuizId) {
+        const quiz = quizzes.find(q => (q._id || q.id) === editingQuizId);
+        if (!quiz) throw new Error('Quiz not found');
+
+        const newQuestions = quiz.questions.map((q: any) =>
+          ((q._id || q.id) === editingQuestionId || q.id === editingQuestionId) ? { ...q, ...newQuestionData } : q
+        );
+
+        await api.patch(`/quizzes/${editingQuizId}`, { questions: newQuestions });
+
+        setQuizzes(prev => prev.map(q => (q._id || q.id) === editingQuizId ? { ...q, questions: newQuestions } : q));
+        toast.success('Question updated successfully');
+      } else {
+        toast.info('Adding new questions globally is under development. Edit existing instead.');
+      }
+      setShowAddModal(false);
+      setEditingQuestionId(null);
+      setEditingQuizId(null);
+      setNewQuestionData({
+        courseId: '', difficulty: 'medium', question: '', options: ['', '', '', ''], correctAnswer: 0, skillMapped: '', explanation: ''
+      });
+    } catch (error) {
+      toast.error('Failed to save question');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -121,14 +202,26 @@ export function QuestionBankPage() {
             className="pl-10"
           />
         </div>
-        <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-          <SelectTrigger className="w-[200px]">
+        <Select value={selectedCourse} onValueChange={(val) => { setSelectedCourse(val); setSelectedModule('all'); }}>
+          <SelectTrigger className="w-[180px] sm:w-[220px] [&>span]:truncate">
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
             {myCourses.map(course => (
               <SelectItem key={course._id || course.id} value={course._id || course.id}>{course.title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedModule} onValueChange={setSelectedModule}>
+          <SelectTrigger className="w-[180px] sm:w-[240px] [&>span]:truncate">
+            <BookOpen className="h-4 w-4 shrink-0 mr-2" />
+            <SelectValue placeholder="All Modules" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Modules</SelectItem>
+            {availableModules.map(mod => (
+              <SelectItem key={mod as string} value={mod as string}>{mod as string}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -198,10 +291,10 @@ export function QuestionBankPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => openEditModal(question)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500">
+                      <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeleteQuestion(question.quizId, question._id || question.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -222,12 +315,21 @@ export function QuestionBankPage() {
       </motion.div>
 
       {/* Add Question Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      <Dialog open={showAddModal} onOpenChange={(open) => {
+        setShowAddModal(open);
+        if (!open) {
+          setEditingQuestionId(null);
+          setEditingQuizId(null);
+          setNewQuestionData({
+            courseId: '', difficulty: 'medium', question: '', options: ['', '', '', ''], correctAnswer: 0, skillMapped: '', explanation: ''
+          });
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Question</DialogTitle>
+            <DialogTitle>{editingQuestionId ? 'Edit Question' : 'Add New Question'}</DialogTitle>
             <DialogDescription>
-              Create a new quiz question
+              {editingQuestionId ? 'Update your existing question' : 'Create a new quiz question'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
@@ -319,9 +421,9 @@ export function QuestionBankPage() {
               <Button variant="outline" onClick={() => setShowAddModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => setShowAddModal(false)}>
+              <Button onClick={handleSubmitQuestion} disabled={isSubmitting}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Add Question
+                {editingQuestionId ? 'Save Changes' : 'Add Question'}
               </Button>
             </div>
           </div>

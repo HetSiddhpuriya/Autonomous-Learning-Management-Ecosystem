@@ -29,12 +29,14 @@ import {
   Download,
   Receipt,
   Search,
+  Wrench,
 } from 'lucide-react';
 
 export function SettingsPage() {
   const { user, updateUser } = useAuth();
   const { theme, toggleTheme, isOfflineMode, toggleOfflineMode } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
     push: true,
@@ -61,6 +63,7 @@ export function SettingsPage() {
 
   useEffect(() => {
     const fetchTransactions = async () => {
+      if (user?.role !== 'student') return;
       setIsLoadingTransactions(true);
       try {
         const response = await api.get('/courses/transactions/my');
@@ -72,7 +75,7 @@ export function SettingsPage() {
       }
     };
     fetchTransactions();
-  }, []);
+  }, [user?.role]);
 
   const downloadReceipt = (transaction: any) => {
     const doc = new jsPDF();
@@ -207,11 +210,11 @@ export function SettingsPage() {
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto">
+          <TabsList className={`grid w-full lg:w-auto ${user?.role === 'student' ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
+            {user?.role === 'student' && <TabsTrigger value="transactions">Transactions</TabsTrigger>}
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -393,6 +396,66 @@ export function SettingsPage() {
                     }
                   />
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Preferences Tab */}
+          <TabsContent value="preferences" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>System Preferences</CardTitle>
+                <CardDescription>
+                  Customize your learning experience
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Dark Mode</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Toggle dark theme for the application
+                    </p>
+                  </div>
+                  <Switch
+                    checked={theme === 'dark'}
+                    onCheckedChange={toggleTheme}
+                  />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Offline Mode</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Enable offline access for downloaded content
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isOfflineMode}
+                    onCheckedChange={toggleOfflineMode}
+                  />
+                </div>
+
+                {user?.role === 'admin' && (
+                  <>
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <Label>Maintenance Mode</Label>
+                          <Wrench className="h-4 w-4 text-amber-500" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Put the entire system into maintenance mode
+                        </p>
+                      </div>
+                      <Switch
+                        checked={isMaintenanceMode}
+                        onCheckedChange={setIsMaintenanceMode}
+                      />
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

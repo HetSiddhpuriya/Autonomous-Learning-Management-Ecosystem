@@ -1,5 +1,7 @@
 import express from 'express';
 import Module from '../models/Module.js';
+import Lesson from '../models/Lesson.js';
+import Course from '../models/Course.js';
 
 const router = express.Router();
 
@@ -34,6 +36,42 @@ router.post('/', async (req, res) => {
         res.status(201).json(newModule);
     } catch (err) {
         console.error('Create module error:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+});
+
+// Delete a module and all its lessons
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedModule = await Module.findByIdAndDelete(id);
+
+        if (!deletedModule) {
+            return res.status(404).json({ message: 'Module not found' });
+        }
+
+        // First, find how many lessons are associated with this module
+        const lessonsToDelete = await Lesson.find({
+            module: deletedModule.name,
+            courseId: deletedModule.courseId
+        });
+
+        if (lessonsToDelete.length > 0) {
+            // Decrement the lessonsCount for the associated course
+            await Course.findByIdAndUpdate(deletedModule.courseId, { 
+                $inc: { lessonsCount: -lessonsToDelete.length } 
+            });
+
+            // Delete all lessons associated with this module's name
+            await Lesson.deleteMany({ 
+                module: deletedModule.name,
+                courseId: deletedModule.courseId 
+            });
+        }
+
+        res.json({ message: 'Module and associated lessons deleted successfully' });
+    } catch (err) {
+        console.error('Delete module error:', err);
         res.status(500).json({ message: 'Internal server error' });
     }
 });

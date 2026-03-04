@@ -19,6 +19,7 @@ import {
   Clock,
   FileText,
   CheckCircle2,
+  Upload,
 } from 'lucide-react';
 
 export function LessonsPage() {
@@ -43,6 +44,8 @@ export function LessonsPage() {
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [lessonModuleError, setLessonModuleError] = useState('');
   const [draggedLessonId, setDraggedLessonId] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -95,13 +98,34 @@ export function LessonsPage() {
       return;
     }
     setIsSubmitting(true);
+    setUploadProgress(0);
     try {
+      let finalVideoUrl = lessonFormData.videoUrl;
+
+      // Check if there is a file to upload
+      if (videoFile) {
+        const formData = new FormData();
+        formData.append('video', videoFile);
+
+        const uploadRes = await api.post('/upload', formData, {
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+            setUploadProgress(percentCompleted);
+          },
+        });
+
+        // Use the returned URL and prepend backend URL if necessary
+        // In this case, since the backend serves it at /uploads, we can prepend process.env server url or just keep the relative path if the frontend handles it, but usually absolute URL or full URL is better. Let's assume the API URL is known.
+        // Or simply store the returned relative path /uploads/...
+        finalVideoUrl = `http://localhost:5000${uploadRes.data.url}`;
+      }
+
       if (editingLessonId) {
         const payload = {
           title: lessonFormData.title,
           description: lessonFormData.description,
           module: lessonFormData.module,
-          videoUrl: lessonFormData.videoUrl,
+          videoUrl: finalVideoUrl,
         };
         const { data } = await api.patch(`/lessons/${editingLessonId}`, payload);
         setLessons(lessons.map(l => (l._id || l.id) === editingLessonId ? data : l));
@@ -111,7 +135,7 @@ export function LessonsPage() {
           title: lessonFormData.title,
           description: lessonFormData.description,
           module: lessonFormData.module,
-          videoUrl: lessonFormData.videoUrl,
+          videoUrl: finalVideoUrl,
           courseId: selectedCourse,
           duration: 15, // Dummy for now
           order: lessons.length + 1,
@@ -122,6 +146,8 @@ export function LessonsPage() {
         toast.success('Lesson added successfully');
       }
       setLessonFormData({ title: '', description: '', module: '', videoUrl: '' });
+      setVideoFile(null);
+      setUploadProgress(0);
       setShowAddModal(false);
       setEditingLessonId(null);
     } catch (error) {
@@ -151,6 +177,8 @@ export function LessonsPage() {
       module: lesson.module,
       videoUrl: lesson.videoUrl || '',
     });
+    setVideoFile(null);
+    setUploadProgress(0);
     setEditingLessonId(lesson._id || lesson.id);
     setShowAddModal(true);
     setLessonModuleError('');
@@ -253,6 +281,22 @@ export function LessonsPage() {
       setShowAddModuleModal(false);
     } catch (error) {
       toast.error('Failed to create module');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteModule = async (moduleId: string, moduleName: string) => {
+    if (!window.confirm(`Are you sure you want to delete the module "${moduleName}" and ALL its lessons? This action cannot be undone.`)) return;
+    try {
+      await api.delete(`/modules/${moduleId}`);
+      setModules(modules.filter(m => m.id !== moduleId));
+      setLessons(lessons.filter(l => l.module !== moduleName));
+      if (selectedModule === moduleName) {
+        setSelectedModule('All Modules');
+      }
+      toast.success('Module and its lessons deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete module');
       console.error(error);
     }
   };
@@ -391,7 +435,20 @@ export function LessonsPage() {
 
                 return (
                   <div key={mod.id} className="space-y-4">
-                    <h3 className="text-lg font-semibold border-b pb-2">{mod.name}</h3>
+                    <div className="flex items-center justify-between border-b pb-2">
+                      <h3 className="text-lg font-semibold">{mod.name}</h3>
+                      {mod.id !== 'uncategorized' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                          onClick={() => handleDeleteModule(mod.id, mod.name)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete Module
+                        </Button>
+                      )}
+                    </div>
                     <div className="space-y-2">
                       {modLessons.length > 0 ? (
                         modLessons.map((lesson, index) => (
@@ -460,18 +517,20 @@ export function LessonsPage() {
         setShowAddModal(open);
         if (!open) {
           setLessonFormData({ title: '', description: '', module: '', videoUrl: '' });
+          setVideoFile(null);
+          setUploadProgress(0);
           setEditingLessonId(null);
           setLessonModuleError('');
         }
       }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingLessonId ? 'Edit Lesson' : 'Add New Lesson'}</DialogTitle>
             <DialogDescription>
               {editingLessonId ? 'Update lesson details' : `Create a new lesson for ${course?.title}`}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-2">
             <div className="space-y-2">
               <label className="text-sm font-medium">Lesson Title</label>
               <Input
@@ -507,23 +566,61 @@ export function LessonsPage() {
               </select>
               {lessonModuleError && <p className="text-sm text-red-500">{lessonModuleError}</p>}
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Video URL</label>
-              <Input
-                placeholder="Enter video URL"
-                value={lessonFormData.videoUrl}
-                onChange={(e) => setLessonFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
-              />
+            <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
+              <label className="text-sm font-medium">Video Source</label>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Upload local video</label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setVideoFile(e.target.files[0]);
+                        // Clear the URL field when a file is selected
+                        setLessonFormData(prev => ({ ...prev, videoUrl: '' }));
+                      }
+                    }}
+                  />
+                  {videoFile && (
+                    <Button variant="ghost" size="icon" onClick={() => setVideoFile(null)} className="flex-shrink-0 text-red-500 hover:text-red-700">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {uploadProgress > 0 && isSubmitting && (
+                  <div className="w-full bg-secondary rounded-full h-2 mt-2">
+                    <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative flex items-center py-2">
+                <div className="flex-grow border-t"></div>
+                <span className="flex-shrink-0 mx-4 text-xs text-muted-foreground uppercase">or enter URL</span>
+                <div className="flex-grow border-t"></div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Video URL (e.g., YouTube, Vimeo)</label>
+                <Input
+                  placeholder="Enter video URL"
+                  value={lessonFormData.videoUrl}
+                  disabled={!!videoFile}
+                  onChange={(e) => setLessonFormData(prev => ({ ...prev, videoUrl: e.target.value }))}
+                />
+              </div>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowAddModal(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmitLesson} disabled={isSubmitting}>
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {editingLessonId ? 'Save Changes' : 'Add Lesson'}
-              </Button>
-            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t mt-2">
+            <Button variant="outline" onClick={() => setShowAddModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmitLesson} disabled={isSubmitting}>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {editingLessonId ? 'Save Changes' : 'Add Lesson'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -570,6 +667,6 @@ export function LessonsPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

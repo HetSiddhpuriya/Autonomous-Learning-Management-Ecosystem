@@ -18,9 +18,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
+        if (error.response?.status === 401) {
             localStorage.removeItem('lms_token');
-            // Optionally redirect to login
+            window.location.href = '/login'; // Force redirect to login on session expiry
+        }
+        if (error.response?.status === 403) {
+            console.error('Permission denied: You do not have access to this resource.');
         }
         return Promise.reject(error);
     }

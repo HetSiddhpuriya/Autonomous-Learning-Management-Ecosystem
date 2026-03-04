@@ -14,6 +14,8 @@ import discussionRoutes from './routes/discussions.js';
 import analyticsRoutes from './routes/analytics.js';
 import moduleRoutes from './routes/modules.js';
 import notificationRoutes from './routes/notifications.js';
+import uploadRoutes from './routes/upload.js';
+import path from 'path';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,8 +26,11 @@ app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ extended: true, limit: '500mb' }));
+
+// Serve uploads folder statically
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 // ─── Health Check ───────────────────────────────────────────────────────────
 app.get('/api/health', (_req, res) => {
@@ -43,6 +48,7 @@ app.use('/api/discussions', discussionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
