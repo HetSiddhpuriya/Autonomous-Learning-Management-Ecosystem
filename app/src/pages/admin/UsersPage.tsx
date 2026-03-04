@@ -486,24 +486,28 @@ export function UsersPage() {
                   <h4 className="font-semibold text-foreground mb-3">Instructor Application Details</h4>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                     <div>
-                      <p className="text-muted-foreground text-xs">Primary Expertise</p>
-                      <p className="font-medium">{selectedUser.primaryExpertise}</p>
+                      <p className="text-muted-foreground text-xs">Highest Qualification</p>
+                      <p className="font-medium">{selectedUser.highestQualification || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Experience Level</p>
-                      <p className="font-medium">{selectedUser.experienceLevel}</p>
+                      <p className="text-muted-foreground text-xs">Field of Study / Subject</p>
+                      <p className="font-medium">{selectedUser.fieldOfStudy || 'N/A'}</p>
                     </div>
                     <div>
-                      <p className="text-muted-foreground text-xs">Years of Experience</p>
-                      <p className="font-medium">{selectedUser.yearsOfExperience} years</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground text-xs">Job Title</p>
+                      <p className="text-muted-foreground text-xs">Current Job Title</p>
                       <p className="font-medium">{selectedUser.currentJobTitle || 'N/A'}</p>
                     </div>
+                    <div>
+                      <p className="text-muted-foreground text-xs">Total Years of Experience</p>
+                      <p className="font-medium">{selectedUser.yearsOfExperience ? `${selectedUser.yearsOfExperience} years` : '0 years'}</p>
+                    </div>
                     <div className="col-span-2">
-                      <p className="text-muted-foreground text-xs">Organization</p>
+                      <p className="text-muted-foreground text-xs">Company / Organization Name</p>
                       <p className="font-medium">{selectedUser.organization || 'N/A'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-muted-foreground text-xs">Languages You Can Teach In</p>
+                      <p className="font-medium">{selectedUser.languages || 'N/A'}</p>
                     </div>
                   </div>
                 </div>

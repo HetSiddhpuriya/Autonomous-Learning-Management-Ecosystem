@@ -20,7 +20,7 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             localStorage.removeItem('lms_token');
-            window.location.href = '/login'; // Force redirect to login on session expiry
+            window.location.href = '/'; // Force redirect to home on session expiry or unauthenticated
         }
         if (error.response?.status === 403) {
             console.error('Permission denied: You do not have access to this resource.');

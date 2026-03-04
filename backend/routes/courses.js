@@ -238,6 +238,7 @@ router.get('/transactions/my', protect, authorize('student'), async (req, res) =
         const transactions = await Enrollment.find({ studentId: req.user._id })
             .populate('courseId')
             .sort({ enrolledAt: -1 });
+        console.log("TRANSACTIONS: ", JSON.stringify(transactions, null, 2));
         res.json(transactions);
     } catch (err) {
         res.status(500).json({ message: err.message });

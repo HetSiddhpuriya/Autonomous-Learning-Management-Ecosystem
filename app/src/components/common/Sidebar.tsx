@@ -44,7 +44,6 @@ const studentNavItems: NavItem[] = [
   { label: 'My Courses', href: '/student/courses', icon: BookOpen },
   { label: 'Recommendations', href: '/student/recommendations', icon: Lightbulb },
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
-  { label: 'Transactions', href: '/student/transactions', icon: Receipt },
   { label: 'Wishlist', href: '/student/wishlist', icon: Heart },
   { label: 'Discussions', href: '/student/discussions', icon: MessageSquare },
   { label: 'Settings', href: '/student/settings', icon: Settings },

@@ -12,11 +12,12 @@ export interface User {
   isActive: boolean;
   isOnline: boolean;
   status: 'pending' | 'approved' | 'rejected';
-  primaryExpertise?: string;
-  experienceLevel?: 'Beginner' | 'Intermediate' | 'Expert' | '';
+  highestQualification?: string;
+  fieldOfStudy?: string;
   yearsOfExperience?: number;
   currentJobTitle?: string;
   organization?: string;
+  languages?: string;
   registrationComplete?: boolean;
   wishlist?: string[];
 }

@@ -47,10 +47,18 @@ export function QuestionBankPage() {
       try {
         const [coursesRes, quizzesRes] = await Promise.all([
           api.get('/courses/all'),
-          api.get('/quizzes') // Note: In production you might want to filter this by instructor's courses backend
+          api.get('/quizzes')
         ]);
-        setMyCourses(coursesRes.data);
-        setQuizzes(quizzesRes.data);
+        const myCoursesData = coursesRes.data;
+        const allQuizzesData = quizzesRes.data;
+
+        setMyCourses(myCoursesData);
+
+        // Filter quizzes to only include those belonging to the instructor's courses
+        const myCourseIds = new Set(myCoursesData.map((c: any) => c.id));
+        const myQuizzes = allQuizzesData.filter((q: any) => myCourseIds.has(q.courseId));
+
+        setQuizzes(myQuizzes);
       } catch (err) {
         console.error('Failed to fetch data', err);
       }

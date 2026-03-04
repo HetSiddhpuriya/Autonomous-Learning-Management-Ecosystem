@@ -17,25 +17,26 @@ export function DashboardLayout({ allowedRoles }: DashboardLayoutProps) {
   const { user, isAuthenticated, updateUser } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showRegForm, setShowRegForm] = useState(false);
   const [formData, setFormData] = useState<{
-    primaryExpertise: string;
-    experienceLevel: 'Beginner' | 'Intermediate' | 'Expert' | '';
-    yearsOfExperience: string;
+    highestQualification: string;
+    fieldOfStudy: string;
     currentJobTitle: string;
     organization: string;
+    yearsOfExperience: string;
+    languages: string;
   }>({
-    primaryExpertise: '',
-    experienceLevel: '',
-    yearsOfExperience: '',
+    highestQualification: '',
+    fieldOfStudy: '',
     currentJobTitle: '',
-    organization: ''
+    organization: '',
+    yearsOfExperience: '',
+    languages: ''
   });
   const [formError, setFormError] = useState('');
 
   const handleRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.primaryExpertise || !formData.experienceLevel || !formData.yearsOfExperience) {
+    if (!formData.highestQualification || !formData.fieldOfStudy || !formData.yearsOfExperience || !formData.languages) {
       setFormError('Please fill out all required fields marked with *');
       return;
     }
@@ -81,61 +82,66 @@ export function DashboardLayout({ allowedRoles }: DashboardLayoutProps) {
               <p className="text-muted-foreground">
                 Please provide your professional information to complete your instructor application.
               </p>
-              {!showRegForm ? (
-                <Button onClick={() => setShowRegForm(true)} className="w-full py-6 text-lg">
-                  Complete Your Full Registration
-                </Button>
-              ) : (
-                <form onSubmit={handleRegistrationSubmit} className="space-y-4 text-left">
-                  <div className="space-y-2">
-                    <Label>Primary Expertise <span className="text-destructive">*</span></Label>
-                    <Input
-                      placeholder="e.g., Python, UI/UX, Marketing"
-                      value={formData.primaryExpertise}
-                      onChange={(e) => setFormData({ ...formData, primaryExpertise: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Experience Level <span className="text-destructive">*</span></Label>
-                    <Select onValueChange={(v) => setFormData({ ...formData, experienceLevel: v as any })}>
-                      <SelectTrigger><SelectValue placeholder="Select level" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Beginner">Beginner</SelectItem>
-                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                        <SelectItem value="Expert">Expert</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Years of Experience <span className="text-destructive">*</span></Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="e.g., 5"
-                      value={formData.yearsOfExperience}
-                      onChange={(e) => setFormData({ ...formData, yearsOfExperience: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Current Job Title</Label>
-                    <Input
-                      placeholder="e.g., Senior Developer"
-                      value={formData.currentJobTitle}
-                      onChange={(e) => setFormData({ ...formData, currentJobTitle: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Organization / Company</Label>
-                    <Input
-                      placeholder="e.g., Tech Corp Inc."
-                      value={formData.organization}
-                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                    />
-                  </div>
-                  {formError && <p className="text-sm text-destructive">{formError}</p>}
-                  <Button type="submit" className="w-full">Submit Application</Button>
-                </form>
-              )}
+              <form onSubmit={handleRegistrationSubmit} className="space-y-4 text-left">
+                <div className="space-y-2">
+                  <Label>Highest Qualification <span className="text-destructive">*</span></Label>
+                  <Select onValueChange={(v) => setFormData({ ...formData, highestQualification: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select qualification" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="High School">High School</SelectItem>
+                      <SelectItem value="Diploma">Diploma</SelectItem>
+                      <SelectItem value="Bachelor's Degree">Bachelor's Degree</SelectItem>
+                      <SelectItem value="Master's Degree">Master's Degree</SelectItem>
+                      <SelectItem value="PhD / Doctorate">PhD / Doctorate</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Field of Study / Subject <span className="text-destructive">*</span></Label>
+                  <Input
+                    placeholder="e.g., Computer Science, Mathematics"
+                    value={formData.fieldOfStudy}
+                    onChange={(e) => setFormData({ ...formData, fieldOfStudy: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Current Job Title</Label>
+                  <Input
+                    placeholder="e.g., Senior Developer"
+                    value={formData.currentJobTitle}
+                    onChange={(e) => setFormData({ ...formData, currentJobTitle: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Company / Organization Name</Label>
+                  <Input
+                    placeholder="e.g., Tech Corp Inc."
+                    value={formData.organization}
+                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Total Years of Experience <span className="text-destructive">*</span></Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="e.g., 5"
+                    value={formData.yearsOfExperience}
+                    onChange={(e) => setFormData({ ...formData, yearsOfExperience: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Languages You Can Teach In <span className="text-destructive">*</span></Label>
+                  <Input
+                    placeholder="e.g., English, Hindi, Spanish"
+                    value={formData.languages}
+                    onChange={(e) => setFormData({ ...formData, languages: e.target.value })}
+                  />
+                </div>
+                {formError && <p className="text-sm text-destructive">{formError}</p>}
+                <Button type="submit" className="w-full">Submit Application</Button>
+              </form>
             </div>
           </div>
         </div>

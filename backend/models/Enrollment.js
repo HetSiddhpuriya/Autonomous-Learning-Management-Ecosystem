@@ -15,8 +15,9 @@ enrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });
 enrollmentSchema.set('toJSON', {
     transform: (_doc, ret) => {
         ret.id = ret._id.toString();
-        ret.studentId = ret.studentId?.toString();
-        ret.courseId = ret.courseId?.toString();
+        
+        // Let mongoose/JSON.stringify handle ObjectIds and Populated objects naturally
+        
         delete ret._id;
         delete ret.__v;
         return ret;

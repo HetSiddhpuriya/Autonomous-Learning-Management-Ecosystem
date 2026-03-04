@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Eye, EyeOff, Mail, Lock, GraduationCap, Users, Shield } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, GraduationCap, Users, Shield, ArrowLeft } from 'lucide-react';
 
 export function LoginPage() {
   const { login, isLoading } = useAuth();
@@ -165,11 +165,19 @@ export function LoginPage() {
 
           </form>
 
-          <div className="mt-6 text-center text-sm">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline font-medium">
-              Create one
-            </Link>
+          <div className="mt-6 text-center text-sm space-y-4">
+            <div>
+              Don't have an account?{' '}
+              <Link to="/register" className="text-primary hover:underline font-medium">
+                Create one
+              </Link>
+            </div>
+            <div>
+              <Link to="/" className="text-muted-foreground hover:text-foreground inline-flex items-center">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Home
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>

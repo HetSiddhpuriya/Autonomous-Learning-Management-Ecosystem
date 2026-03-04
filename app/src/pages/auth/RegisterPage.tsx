@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Mail, Lock, User, GraduationCap, Users, Shield, Phone, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, GraduationCap, Users, Shield, Phone, ChevronDown, ArrowLeft } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function RegisterPage() {
@@ -270,11 +270,19 @@ export function RegisterPage() {
             </div>
           </form>
 
-          <div className="mt-6 text-center text-sm">
-            Already have an account?{' '}
-            <Link to="/login" className="text-primary hover:underline font-medium">
-              Sign in
-            </Link>
+          <div className="mt-6 text-center text-sm space-y-4">
+            <div>
+              Already have an account?{' '}
+              <Link to="/login" className="text-primary hover:underline font-medium">
+                Sign in
+              </Link>
+            </div>
+            <div>
+              <Link to="/" className="text-muted-foreground hover:text-foreground inline-flex items-center">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Home
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
