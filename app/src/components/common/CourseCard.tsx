@@ -79,10 +79,10 @@ export function CourseCard({
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{course.description}</p>
                 </div>
                 <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <BookOpen className="h-4 w-4" />
-                      {course.lessonsCount} lessons
+                      {course.lessonsCount}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
@@ -90,9 +90,15 @@ export function CourseCard({
                     </span>
                   </div>
                   {showActions && (
-                    <Button size="sm" onClick={onContinue || onEnroll}>
-                      {showProgress ? 'Continue' : 'Enroll'}
-                    </Button>
+                    showProgress ? (
+                      <Button size="icon" className="rounded-full shadow-md shrink-0" onClick={onContinue}>
+                        <Play className="h-4 w-4 ml-0.5 fill-current" />
+                      </Button>
+                    ) : (
+                      <Button size="sm" onClick={onEnroll}>
+                        Enroll
+                      </Button>
+                    )
                   )}
                 </div>
                 {showProgress && progress > 0 && (
@@ -150,23 +156,36 @@ export function CourseCard({
           </h3>
           <p className="text-sm text-muted-foreground mb-3">{course.instructorName}</p>
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-            <span className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              {course.lessonsCount}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {formatDuration(course.duration)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {course.enrolledStudents.toLocaleString()}
-            </span>
+          <div className="flex items-center justify-between mt-auto pt-2">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-4 w-4" />
+                {course.lessonsCount}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {formatDuration(course.duration)}
+              </span>
+              {!showProgress && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {course.enrolledStudents?.toLocaleString() || 0}
+                </span>
+              )}
+            </div>
+            {showActions && showProgress && (
+              <Button
+                size="icon"
+                className="rounded-full shadow-lg h-10 w-10 shrink-0 bg-primary hover:bg-primary/90 transition-transform hover:scale-105"
+                onClick={onContinue}
+              >
+                <Play className="h-5 w-5 ml-0.5 fill-current" />
+              </Button>
+            )}
           </div>
 
           {showProgress && progress > 0 && (
-            <div className="mb-4">
+            <div className="mt-4">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-muted-foreground">Progress</span>
                 <span className="font-medium">{progress}%</span>
@@ -175,20 +194,13 @@ export function CourseCard({
             </div>
           )}
 
-          {showActions && (
+          {showActions && !showProgress && (
             <Button
-              className="w-full"
-              variant={showProgress && progress > 0 ? 'default' : 'outline'}
-              onClick={onContinue || onEnroll}
+              className="w-full mt-4"
+              variant="outline"
+              onClick={onEnroll}
             >
-              {showProgress && progress > 0 ? (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Continue Learning
-                </>
-              ) : (
-                'Enroll Now'
-              )}
+              Enroll Now
             </Button>
           )}
         </CardContent>
