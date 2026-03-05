@@ -20,7 +20,7 @@ import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 
 // Student Pages
 import { StudentDashboard } from '@/pages/student/StudentDashboard';
-import { MyCoursesPage } from '@/pages/student/MyCoursesPage';
+import { MyCoursesPage as StudentMyCourses } from '@/pages/student/MyCoursesPage';
 import { RecommendationsPage } from '@/pages/student/RecommendationsPage';
 import { ProgressPage } from '@/pages/student/ProgressPage';
 import { DiscussionsPage } from '@/pages/student/DiscussionsPage';
@@ -33,6 +33,7 @@ import { PaymentCheckoutPage } from '@/pages/student/PaymentCheckoutPage';
 // Instructor Pages
 import { InstructorDashboard } from '@/pages/instructor/InstructorDashboard';
 import { CreateCoursePage } from '@/pages/instructor/CreateCoursePage';
+import { MyCoursesPage as InstructorMyCourses } from '@/pages/instructor/MyCoursesPage';
 import { LessonsPage } from '@/pages/instructor/LessonsPage';
 import { QuestionBankPage } from '@/pages/instructor/QuestionBankPage';
 import { StudentsPage } from '@/pages/instructor/StudentsPage';
@@ -73,7 +74,7 @@ function App() {
               {/* Student Routes */}
               <Route element={<DashboardLayout allowedRoles={['student']} />}>
                 <Route path="/student" element={<StudentDashboard />} />
-                <Route path="/student/courses" element={<MyCoursesPage />} />
+                <Route path="/student/courses" element={<StudentMyCourses />} />
                 <Route path="/student/recommendations" element={<RecommendationsPage />} />
                 <Route path="/student/progress" element={<ProgressPage />} />
                 <Route path="/student/discussions" element={<DiscussionsPage />} />
@@ -86,7 +87,9 @@ function App() {
               {/* Instructor Routes */}
               <Route element={<DashboardLayout allowedRoles={['instructor']} />}>
                 <Route path="/instructor" element={<InstructorDashboard />} />
+                <Route path="/instructor/courses" element={<InstructorMyCourses />} />
                 <Route path="/instructor/create-course" element={<CreateCoursePage />} />
+                <Route path="/instructor/edit-course/:courseId" element={<CreateCoursePage />} />
                 <Route path="/instructor/lessons" element={<LessonsPage />} />
                 <Route path="/instructor/questions" element={<QuestionBankPage />} />
                 <Route path="/instructor/students" element={<StudentsPage />} />

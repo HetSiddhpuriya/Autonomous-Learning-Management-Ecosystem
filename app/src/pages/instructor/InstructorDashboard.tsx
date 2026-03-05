@@ -279,13 +279,17 @@ export function InstructorDashboard() {
                     <Progress value={analytics.find(a => a.courseId === course.id)?.averageCompletion || 0} className="h-2" />
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link to={`/courses/${course.id || (course as any)._id}`}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Link>
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link to={`/instructor/edit-course/${course.id || (course as any)._id}`}>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>

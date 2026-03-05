@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +23,9 @@ import {
 } from 'lucide-react';
 
 export function LessonsPage() {
+  const [searchParams] = useSearchParams();
+  const urlCourseId = searchParams.get('courseId');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('c1');
   const [selectedModule, setSelectedModule] = useState('All Modules');
@@ -40,12 +43,16 @@ export function LessonsPage() {
     description: '',
     module: '',
     videoUrl: '',
+    duration: 0,
   });
   const [editingLessonId, setEditingLessonId] = useState<string | null>(null);
   const [lessonModuleError, setLessonModuleError] = useState('');
   const [draggedLessonId, setDraggedLessonId] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState('');
+  const [selectedLessonTitle, setSelectedLessonTitle] = useState('');
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -53,14 +60,18 @@ export function LessonsPage() {
         const { data } = await api.get('/courses/all');
         setMyCourses(data);
         if (data.length > 0) {
-          setSelectedCourse(data[0]._id || data[0].id);
+          if (urlCourseId && data.some((c: any) => (c._id || c.id) === urlCourseId)) {
+            setSelectedCourse(urlCourseId);
+          } else {
+            setSelectedCourse(data[0]._id || data[0].id);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch courses:', error);
       }
     };
     fetchCourses();
-  }, []);
+  }, [urlCourseId]);
 
   useEffect(() => {
     if (!selectedCourse) return;
@@ -101,6 +112,25 @@ export function LessonsPage() {
     setUploadProgress(0);
     try {
       let finalVideoUrl = lessonFormData.videoUrl;
+      let calculatedDuration = 0;
+
+      // Extract duration from video file if present
+      if (videoFile) {
+        calculatedDuration = await new Promise<number>((resolve) => {
+          const video = document.createElement('video');
+          video.preload = 'metadata';
+          video.onloadedmetadata = () => {
+            window.URL.revokeObjectURL(video.src);
+            resolve(Math.round(video.duration / 60) || 1); // Ensure at least 1m
+          };
+          video.onerror = () => resolve(1);
+          video.src = URL.createObjectURL(videoFile);
+        });
+      } else if (lessonFormData.videoUrl && isYoutubeUrl(lessonFormData.videoUrl)) {
+        // For YouTube, we'd ideally use the API, but for now we'll simulate or use a default
+        // since we can't easily get duration from just a URL without an API key
+        calculatedDuration = 10; // Default YouTube duration if not specified
+      }
 
       // Check if there is a file to upload
       if (videoFile) {
@@ -121,11 +151,12 @@ export function LessonsPage() {
       }
 
       if (editingLessonId) {
-        const payload = {
+        const payload: any = {
           title: lessonFormData.title,
           description: lessonFormData.description,
           module: lessonFormData.module,
           videoUrl: finalVideoUrl,
+          duration: Number(lessonFormData.duration) || calculatedDuration || 1,
         };
         const { data } = await api.patch(`/lessons/${editingLessonId}`, payload);
         setLessons(lessons.map(l => (l._id || l.id) === editingLessonId ? data : l));
@@ -137,7 +168,7 @@ export function LessonsPage() {
           module: lessonFormData.module,
           videoUrl: finalVideoUrl,
           courseId: selectedCourse,
-          duration: 15, // Dummy for now
+          duration: Number(lessonFormData.duration) || calculatedDuration || 1,
           order: lessons.length + 1,
           resources: []
         };
@@ -145,7 +176,7 @@ export function LessonsPage() {
         setLessons([...lessons, data]);
         toast.success('Lesson added successfully');
       }
-      setLessonFormData({ title: '', description: '', module: '', videoUrl: '' });
+      setLessonFormData({ title: '', description: '', module: '', videoUrl: '', duration: 0 });
       setVideoFile(null);
       setUploadProgress(0);
       setShowAddModal(false);
@@ -176,12 +207,37 @@ export function LessonsPage() {
       description: lesson.description || '',
       module: lesson.module,
       videoUrl: lesson.videoUrl || '',
+      duration: lesson.duration || 0,
     });
     setVideoFile(null);
     setUploadProgress(0);
     setEditingLessonId(lesson._id || lesson.id);
     setShowAddModal(true);
     setLessonModuleError('');
+  };
+
+  const handlePlayVideo = (lesson: any) => {
+    if (!lesson.videoUrl) {
+      toast.error('No video URL provided for this lesson');
+      return;
+    }
+    setSelectedVideoUrl(lesson.videoUrl);
+    setSelectedLessonTitle(lesson.title);
+    setShowVideoModal(true);
+  };
+
+  const getEmbedUrl = (url: string) => {
+    if (url.includes('youtube.com/watch?v=')) {
+      return url.replace('watch?v=', 'embed/');
+    }
+    if (url.includes('youtu.be/')) {
+      return url.replace('youtu.be/', 'youtube.com/embed/');
+    }
+    return url;
+  };
+
+  const isYoutubeUrl = (url: string) => {
+    return url.includes('youtube.com') || url.includes('youtu.be');
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -322,9 +378,10 @@ export function LessonsPage() {
     : [{ id: 'uncategorized', name: 'Lessons' }];
 
   const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const totalMinutes = Math.max(1, Math.round(minutes)); // Ensure at least 1 minute
+    if (totalMinutes < 60) return `${totalMinutes}m`;
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
@@ -422,7 +479,7 @@ export function LessonsPage() {
             <div className="flex items-center justify-between">
               <CardTitle>{course?.title} - Lessons</CardTitle>
               <Badge variant="outline">
-                {lessons.length} lessons • {formatDuration(lessons.reduce((acc, l) => acc + l.duration, 0))}
+                {lessons.length} lessons • {formatDuration(lessons.reduce((acc, l) => acc + (Number(l.duration) || 0), 0))}
               </Badge>
             </div>
           </CardHeader>
@@ -485,7 +542,7 @@ export function LessonsPage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button variant="ghost" size="icon">
+                              <Button variant="ghost" size="icon" onClick={() => handlePlayVideo(lesson)}>
                                 <Play className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon" onClick={() => openEditModal(lesson)}>
@@ -515,7 +572,7 @@ export function LessonsPage() {
       <Dialog open={showAddModal} onOpenChange={(open) => {
         setShowAddModal(open);
         if (!open) {
-          setLessonFormData({ title: '', description: '', module: '', videoUrl: '' });
+          setLessonFormData({ title: '', description: '', module: '', videoUrl: '', duration: 0 });
           setVideoFile(null);
           setUploadProgress(0);
           setEditingLessonId(null);
@@ -564,6 +621,16 @@ export function LessonsPage() {
                 ))}
               </select>
               {lessonModuleError && <p className="text-sm text-red-500">{lessonModuleError}</p>}
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Video Duration (Minutes)</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="Enter duration in minutes"
+                value={lessonFormData.duration || ''}
+                onChange={(e) => setLessonFormData(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
+              />
             </div>
             <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
               <label className="text-sm font-medium">Video Source</label>
@@ -663,6 +730,39 @@ export function LessonsPage() {
                 Add Module
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Player Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="max-w-[1200px] w-[90vw] p-0 overflow-hidden bg-black border-none">
+          <DialogHeader className="p-4 bg-background border-b flex flex-row items-center justify-between">
+            <div>
+              <DialogTitle className="text-lg font-semibold">{selectedLessonTitle}</DialogTitle>
+              <DialogDescription className="text-xs">
+                Playing lesson video
+              </DialogDescription>
+            </div>
+          </DialogHeader>
+          <div className="aspect-video w-full">
+            {isYoutubeUrl(selectedVideoUrl) ? (
+              <iframe
+                src={getEmbedUrl(selectedVideoUrl)}
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            ) : (
+              <video
+                src={selectedVideoUrl}
+                controls
+                autoPlay
+                className="w-full h-full"
+              >
+                Your browser does not support the video tag.
+              </video>
+            )}
           </div>
         </DialogContent>
       </Dialog>

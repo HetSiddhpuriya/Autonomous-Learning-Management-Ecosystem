@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,9 @@ import {
 
 export function CreateCoursePage() {
   const navigate = useNavigate();
+  const { courseId } = useParams();
+  const isEditing = !!courseId;
+
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [courseData, setCourseData] = useState({
@@ -44,6 +47,33 @@ export function CreateCoursePage() {
     duration: '',
     durationUnit: 'minutes',
   });
+
+  useEffect(() => {
+    if (isEditing) {
+      const fetchCourse = async () => {
+        try {
+          const { data } = await api.get(`/courses/${courseId}`);
+          setCourseData({
+            title: data.title || '',
+            description: data.description || '',
+            category: data.category || '',
+            customCategory: '',
+            difficulty: data.difficulty || '',
+            skillTags: data.skillTags || [],
+            newTag: '',
+            thumbnail: data.thumbnail || '',
+            imageUrl: '',
+            price: data.price ? data.price.toString() : '0',
+            duration: data.duration ? data.duration.toString() : '',
+            durationUnit: 'minutes',
+          });
+        } catch (err) {
+          toast.error('Failed to load course details');
+        }
+      };
+      fetchCourse();
+    }
+  }, [isEditing, courseId]);
 
   const categories = [
     'Data Science',
@@ -100,7 +130,7 @@ export function CreateCoursePage() {
       if (courseData.durationUnit === 'hours') calculatedDuration *= 60;
       else if (courseData.durationUnit === 'months') calculatedDuration *= 30 * 24 * 60; // 30 days scale
 
-      const payload = {
+      const payload: any = {
         title: courseData.title,
         description: courseData.description,
         category: courseData.category === 'other' ? courseData.customCategory : courseData.category,
@@ -109,13 +139,22 @@ export function CreateCoursePage() {
         thumbnail: courseData.thumbnail || courseData.imageUrl,
         price: Number(courseData.price) || 0,
         duration: calculatedDuration,
-        isPublished: false,
       };
-      await api.post('/courses', payload);
-      toast.success('Course submitted to admin for review!');
+
+      if (!isEditing) {
+        payload.isPublished = false;
+      }
+
+      if (isEditing) {
+        await api.patch(`/courses/${courseId}`, payload);
+        toast.success('Course updated successfully!');
+      } else {
+        await api.post('/courses', payload);
+        toast.success('Course submitted to admin for review!');
+      }
       navigate('/instructor/lessons');
     } catch (error) {
-      toast.error('Failed to create course');
+      toast.error(isEditing ? 'Failed to update course' : 'Failed to create course');
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -506,9 +545,9 @@ export function CreateCoursePage() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Dashboard
         </Button>
-        <h1 className="text-3xl font-bold">Create New Course</h1>
+        <h1 className="text-3xl font-bold">{isEditing ? 'Edit Course' : 'Create New Course'}</h1>
         <p className="text-muted-foreground mt-1">
-          Share your knowledge with learners worldwide
+          {isEditing ? 'Update your course details' : 'Share your knowledge with learners worldwide'}
         </p>
       </motion.div>
 
@@ -572,12 +611,12 @@ export function CreateCoursePage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Submitting...
+                      {isEditing ? 'Updating...' : 'Submitting...'}
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Submit for Review
+                      {isEditing ? 'Update Course' : 'Submit for Review'}
                     </>
                   )}
                 </Button>

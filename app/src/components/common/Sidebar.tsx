@@ -51,7 +51,7 @@ const studentNavItems: NavItem[] = [
 
 const instructorNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/instructor', icon: LayoutDashboard },
-  { label: 'Create Course', href: '/instructor/create-course', icon: PlusCircle },
+  { label: 'My Course', href: '/instructor/courses', icon: GraduationCap },
   { label: 'Lessons', href: '/instructor/lessons', icon: Layers },
   { label: 'Question Bank', href: '/instructor/questions', icon: FileQuestion },
   { label: 'Students', href: '/instructor/students', icon: Users },
