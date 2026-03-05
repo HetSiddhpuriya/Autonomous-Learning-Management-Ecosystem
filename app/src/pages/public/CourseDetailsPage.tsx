@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, CheckCircle, Clock, BookOpen, Star, Heart, Share2, Award } from 'lucide-react';
+import { Play, CheckCircle, Clock, BookOpen, Star, Heart, Share2, Award, Briefcase, Laptop, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -238,6 +238,62 @@ export function CourseDetailsPage() {
                                         </div>
                                     )}
                                 </Accordion>
+                            </div>
+
+                            {/* Course Benefits */}
+                            <div>
+                                <h2 className="text-2xl font-bold mb-6 text-slate-900">Course Benefits</h2>
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                    <div className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-blue-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-default">
+                                        <div className="h-12 w-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shrink-0 border border-blue-100 group-hover:scale-110 transition-transform duration-300">
+                                            <Award className="h-6 w-6" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium text-base text-slate-900 group-hover:text-blue-700 transition-colors">Course Completion Certificate</h3>
+                                            <p className="text-sm text-slate-600 leading-relaxed">Student will receive a verified certificate after completing the course.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-indigo-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-default">
+                                        <div className="h-12 w-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0 border border-indigo-100 group-hover:scale-110 transition-transform duration-300">
+                                            <Briefcase className="h-6 w-6" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium text-base text-slate-900 group-hover:text-indigo-700 transition-colors">Interview Scheduling Support</h3>
+                                            <p className="text-sm text-slate-600 leading-relaxed">Students will get the opportunity to schedule interviews with partner companies.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-emerald-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-default">
+                                        <div className="h-12 w-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0 border border-emerald-100 group-hover:scale-110 transition-transform duration-300">
+                                            <Laptop className="h-6 w-6" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium text-base text-slate-900 group-hover:text-emerald-700 transition-colors">Real-World Projects</h3>
+                                            <p className="text-sm text-slate-600 leading-relaxed">Hands-on projects to build practical industry skills.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-orange-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-default">
+                                        <div className="h-12 w-12 bg-orange-50 text-orange-600 rounded-xl flex items-center justify-center shrink-0 border border-orange-100 group-hover:scale-110 transition-transform duration-300">
+                                            <Clock className="h-6 w-6" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium text-base text-slate-900 group-hover:text-orange-700 transition-colors">Lifetime Course Access</h3>
+                                            <p className="text-sm text-slate-600 leading-relaxed">Students can access the course anytime after enrollment.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="group flex items-start gap-4 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-purple-300 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-default sm:col-span-2 md:col-span-1">
+                                        <div className="h-12 w-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0 border border-purple-100 group-hover:scale-110 transition-transform duration-300">
+                                            <MessageCircle className="h-6 w-6" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <h3 className="font-medium text-base text-slate-900 group-hover:text-purple-700 transition-colors">Instructor Support</h3>
+                                            <p className="text-sm text-slate-600 leading-relaxed">Direct support and guidance from the instructor.</p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Instructor Info */}

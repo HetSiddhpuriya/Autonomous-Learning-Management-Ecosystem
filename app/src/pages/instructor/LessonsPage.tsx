@@ -440,12 +440,11 @@ export function LessonsPage() {
                       {mod.id !== 'uncategorized' && (
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
                           onClick={() => handleDeleteModule(mod.id, mod.name)}
                         >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Module
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

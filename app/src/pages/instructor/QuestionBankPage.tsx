@@ -41,6 +41,25 @@ export function QuestionBankPage() {
   });
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
   const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
+  const [courseModules, setCourseModules] = useState<{ name: string, lessonId: string }[]>([]);
+
+  useEffect(() => {
+    if (newQuestionData.courseId) {
+      api.get(`/lessons?courseId=${newQuestionData.courseId}`).then(res => {
+        const modulesSet = new Set<string>();
+        const modulesMap = new Map<string, string>();
+        res.data.forEach((l: any) => {
+          if (l.module && !modulesSet.has(l.module)) {
+            modulesSet.add(l.module);
+            modulesMap.set(l.module, l._id || l.id);
+          }
+        });
+        setCourseModules(Array.from(modulesSet).map(name => ({ name, lessonId: modulesMap.get(name)! })));
+      }).catch(err => console.error(err));
+    } else {
+      setCourseModules([]);
+    }
+  }, [newQuestionData.courseId]);
 
   useEffect(() => {
     const fetchCoursesAndQuizzes = async () => {
@@ -156,7 +175,38 @@ export function QuestionBankPage() {
         setQuizzes(prev => prev.map(q => (q._id || q.id) === editingQuizId ? { ...q, questions: newQuestions } : q));
         toast.success('Question updated successfully');
       } else {
-        toast.info('Adding new questions globally is under development. Edit existing instead.');
+        if (!newQuestionData.courseId || !newQuestionData.skillMapped) {
+          toast.error('Please select both Course and Course Module');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const targetModule = courseModules.find(m => m.name === newQuestionData.skillMapped);
+        if (!targetModule || !targetModule.lessonId) {
+          toast.error('Failed to resolve lesson for this module. Make sure the module has at least one lesson.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const quizRes = await api.get(`/quizzes?lessonId=${targetModule.lessonId}`);
+        let currentQuiz = quizRes.data.length > 0 ? quizRes.data[0] : null;
+
+        if (!currentQuiz) {
+          const newQuizData = {
+            courseId: newQuestionData.courseId,
+            lessonId: targetModule.lessonId,
+            title: `${newQuestionData.skillMapped} Quiz`,
+            questions: [newQuestionData]
+          };
+          const { data } = await api.post('/quizzes', newQuizData);
+          setQuizzes(prev => [...prev, data]);
+          toast.success('Question added successfully to a new quiz');
+        } else {
+          const newQuestions = [...(currentQuiz.questions || []), newQuestionData];
+          const { data } = await api.patch(`/quizzes/${currentQuiz._id || currentQuiz.id}`, { questions: newQuestions });
+          setQuizzes(prev => prev.map(q => (q._id || q.id) === (currentQuiz._id || currentQuiz.id) ? data : q));
+          toast.success('Question added to existing quiz');
+        }
       }
       setShowAddModal(false);
       setEditingQuestionId(null);
@@ -380,12 +430,17 @@ export function QuestionBankPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Skill Mapped</label>
-              <Input
-                placeholder="e.g., Machine Learning, React"
-                value={newQuestionData.skillMapped}
-                onChange={(e) => setNewQuestionData(prev => ({ ...prev, skillMapped: e.target.value }))}
-              />
+              <label className="text-sm font-medium">Course Module *</label>
+              <Select value={newQuestionData.skillMapped} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, skillMapped: v }))} disabled={!newQuestionData.courseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={newQuestionData.courseId ? "Select module" : "Select a course first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {courseModules.map(mod => (
+                    <SelectItem key={mod.name} value={mod.name}>{mod.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Options *</label>
