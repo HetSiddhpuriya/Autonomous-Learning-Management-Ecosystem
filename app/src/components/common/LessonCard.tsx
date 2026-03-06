@@ -3,13 +3,14 @@ import type { Lesson } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Play, FileText, Clock, CheckCircle2, Lock } from 'lucide-react';
+import { Play, FileText, Clock, CheckCircle2, Lock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LessonCardProps {
   lesson: Lesson;
   isLocked?: boolean;
   isActive?: boolean;
+  hasPendingExam?: boolean;
   onClick?: () => void;
   onMarkComplete?: (completed: boolean) => void;
   delay?: number;
@@ -20,6 +21,7 @@ export function LessonCard({
   lesson,
   isLocked = false,
   isActive = false,
+  hasPendingExam = false,
   onClick,
   onMarkComplete,
   delay = 0,
@@ -48,13 +50,16 @@ export function LessonCard({
             isActive
               ? 'bg-primary/10 border-primary shadow-sm'
               : 'border-transparent hover:bg-muted',
-            lesson.isCompleted && !isActive && 'bg-green-50 dark:bg-green-900/20'
+            lesson.isCompleted && !isActive && !hasPendingExam && 'bg-green-50 dark:bg-green-900/20',
+            hasPendingExam && !isActive && 'bg-amber-50 dark:bg-amber-900/20 border-amber-200'
           )}
           onClick={!isLocked ? onClick : undefined}
         >
           <div className="flex-shrink-0">
             {isLocked ? (
               <Lock className="h-5 w-5 text-muted-foreground" />
+            ) : hasPendingExam ? (
+              <AlertCircle className="h-5 w-5 text-amber-500" />
             ) : lesson.isCompleted ? (
               <CheckCircle2 className="h-5 w-5 text-green-500" />
             ) : (
@@ -64,7 +69,8 @@ export function LessonCard({
           <div className="flex-1 min-w-0">
             <p className={cn(
               'text-sm font-medium truncate',
-              lesson.isCompleted && 'text-green-700 dark:text-green-300'
+              lesson.isCompleted && !hasPendingExam && 'text-green-700 dark:text-green-300',
+              hasPendingExam && 'text-amber-700 dark:text-amber-500'
             )}>
               {lesson.order}. {lesson.title}
             </p>
@@ -97,7 +103,8 @@ export function LessonCard({
           'overflow-hidden transition-all border-2',
           isLocked ? 'opacity-60 border-transparent' : 'hover:shadow-md cursor-pointer',
           isActive ? 'border-primary shadow-md' : 'border-transparent',
-          lesson.isCompleted && !isActive && 'border-green-200 dark:border-green-800'
+          lesson.isCompleted && !isActive && !hasPendingExam && 'border-green-200 dark:border-green-800',
+          hasPendingExam && !isActive && 'border-amber-200 dark:border-amber-800 bg-amber-50/30'
         )}
         onClick={!isLocked ? onClick : undefined}
       >
@@ -105,12 +112,14 @@ export function LessonCard({
           <div className="flex items-start gap-4">
             <div className={cn(
               'flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center',
-              lesson.isCompleted
+              lesson.isCompleted && !hasPendingExam
                 ? 'bg-green-100 dark:bg-green-900'
-                : 'bg-primary/10'
+                : hasPendingExam ? 'bg-amber-100 dark:bg-amber-900' : 'bg-primary/10'
             )}>
               {isLocked ? (
                 <Lock className="h-5 w-5 text-muted-foreground" />
+              ) : hasPendingExam ? (
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               ) : lesson.isCompleted ? (
                 <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
               ) : (
@@ -123,7 +132,8 @@ export function LessonCard({
                 <div>
                   <h4 className={cn(
                     'font-medium',
-                    lesson.isCompleted && 'text-green-700 dark:text-green-300'
+                    lesson.isCompleted && !hasPendingExam && 'text-green-700 dark:text-green-300',
+                    hasPendingExam && 'text-amber-700 dark:text-amber-500'
                   )}>
                     {lesson.order}. {lesson.title}
                   </h4>

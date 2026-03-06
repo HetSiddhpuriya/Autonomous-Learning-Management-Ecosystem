@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { QuizQuestion } from '@/components/common/QuizQuestion';
-import { mockQuizzes } from '@/mock/data';
+import api from '@/lib/api';
 import {
   Clock,
   AlertCircle,
@@ -28,18 +28,59 @@ import {
 export function QuizPage() {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
-  const quiz = mockQuizzes.find(q => q.id === quizId) || mockQuizzes[0];
+  const [searchParams] = useSearchParams();
+  const isReviewMode = searchParams.get('mode') === 'review';
+
+  const [quiz, setQuiz] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<(number | null)[]>(new Array(quiz.questions.length).fill(null));
-  const [timeRemaining, setTimeRemaining] = useState(quiz.timeLimit * 60);
+  const [answers, setAnswers] = useState<(number | null)[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
 
+  useEffect(() => {
+    const fetchQuiz = async () => {
+      try {
+        const { data } = await api.get(`/quizzes/${quizId}`);
+        setQuiz(data);
+
+        if (isReviewMode) {
+          try {
+            const attemptRes = await api.get(`/quizzes/${quizId}/attempt`);
+            if (attemptRes.data) {
+              setAnswers(attemptRes.data.answers || new Array(data.questions.length).fill(null));
+              setScore(attemptRes.data.score || 0);
+              setTimeRemaining(0);
+              setIsSubmitted(true);
+              setShowResults(true);
+            }
+          } catch (err) {
+            // Fallback for users who passed before attempt tracking was added
+            setAnswers(data.questions.map((q: any) => q.correctAnswer));
+            setScore(100);
+            setTimeRemaining(0);
+            setIsSubmitted(true);
+            setShowResults(true);
+          }
+        } else {
+          setAnswers(new Array(data.questions.length).fill(null));
+          setTimeRemaining((data.timeLimit || 15) * 60);
+        }
+      } catch (err) {
+        console.error("Failed to fetch quiz", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQuiz();
+  }, [quizId, isReviewMode]);
+
   // Timer
   useEffect(() => {
-    if (isSubmitted || timeRemaining <= 0) return;
+    if (isSubmitted || timeRemaining <= 0 || !quiz) return;
 
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
@@ -52,7 +93,7 @@ export function QuizPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isSubmitted, timeRemaining]);
+  }, [isSubmitted, timeRemaining, quiz]);
 
   const handleAnswerSelect = (answerIndex: number) => {
     if (isSubmitted) return;
@@ -62,7 +103,7 @@ export function QuizPage() {
   };
 
   const handleNext = () => {
-    if (currentQuestionIndex < quiz.questions.length - 1) {
+    if (quiz && currentQuestionIndex < quiz.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     }
   };
@@ -73,20 +114,23 @@ export function QuizPage() {
     }
   };
 
-  const handleSubmit = () => {
-    let correctCount = 0;
-    answers.forEach((answer, index) => {
-      if (answer === quiz.questions[index].correctAnswer) {
-        correctCount++;
-      }
-    });
-    const finalScore = Math.round((correctCount / quiz.questions.length) * 100);
-    setScore(finalScore);
-    setIsSubmitted(true);
-    setShowResults(true);
+  const handleSubmit = async () => {
+    if (!quiz) return;
+    try {
+      const { data } = await api.post(`/quizzes/${quizId}/submit`, {
+        answers,
+        timeTaken: (quiz.timeLimit * 60) - timeRemaining
+      });
+      setScore(data.score);
+      setIsSubmitted(true);
+      setShowResults(true);
+    } catch (err) {
+      console.error("Failed to submit quiz", err);
+    }
   };
 
   const handleRetry = () => {
+    if (!quiz) return;
     setCurrentQuestionIndex(0);
     setAnswers(new Array(quiz.questions.length).fill(null));
     setTimeRemaining(quiz.timeLimit * 60);
@@ -94,6 +138,9 @@ export function QuizPage() {
     setShowResults(false);
     setScore(0);
   };
+
+  if (loading) return <div className="p-8 text-center animate-pulse">Loading Quiz...</div>;
+  if (!quiz) return <div className="p-8 text-center">Quiz not found</div>;
 
   const currentQuestion = quiz.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / quiz.questions.length) * 100;
@@ -126,9 +173,8 @@ export function QuizPage() {
               Test your understanding of the lesson material
             </p>
           </div>
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-            timeRemaining < 60 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-muted'
-          }`}>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${timeRemaining < 60 ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-muted'
+            }`}>
             <Clock className="h-5 w-5" />
             <span className="font-mono font-medium">{formatTime(timeRemaining)}</span>
           </div>
@@ -155,7 +201,7 @@ export function QuizPage() {
       {/* Question */}
       <AnimatePresence mode="wait">
         <QuizQuestion
-          key={currentQuestion.id}
+          key={currentQuestion.id || currentQuestion._id || currentQuestionIndex}
           question={currentQuestion}
           questionNumber={currentQuestionIndex + 1}
           totalQuestions={quiz.questions.length}
@@ -181,18 +227,17 @@ export function QuizPage() {
           Previous
         </Button>
 
-        <div className="flex items-center gap-2">
-          {quiz.questions.map((_, index) => (
+        <div className="flex items-center gap-2 flex-wrap max-w-[50%] justify-center">
+          {quiz.questions.map((_: any, index: number) => (
             <button
               key={index}
               onClick={() => setCurrentQuestionIndex(index)}
-              className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                index === currentQuestionIndex
-                  ? 'bg-primary text-primary-foreground'
-                  : answers[index] !== null
+              className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${index === currentQuestionIndex
+                ? 'bg-primary text-primary-foreground'
+                : answers[index] !== null
                   ? 'bg-primary/20 text-primary'
                   : 'bg-muted text-muted-foreground'
-              }`}
+                }`}
             >
               {index + 1}
             </button>
@@ -202,12 +247,18 @@ export function QuizPage() {
         {currentQuestionIndex < quiz.questions.length - 1 ? (
           <Button onClick={handleNext}>Next</Button>
         ) : (
-          <Button
-            onClick={handleSubmit}
-            disabled={answeredCount < quiz.questions.length}
-          >
-            Submit Quiz
-          </Button>
+          !isSubmitted ? (
+            <Button
+              onClick={handleSubmit}
+              disabled={answeredCount < quiz.questions.length}
+            >
+              Submit Quiz
+            </Button>
+          ) : (
+            <Button onClick={() => navigate(`/student/courses/${quiz.courseId}/lessons/start`)}>
+              Finish Review
+            </Button>
+          )
         )}
       </motion.div>
 
@@ -235,16 +286,14 @@ export function QuizPage() {
 
           <div className="py-6">
             <div className="flex items-center justify-center mb-6">
-              <div className={`w-32 h-32 rounded-full flex items-center justify-center ${
-                score >= quiz.passingScore
-                  ? 'bg-green-100 dark:bg-green-900'
-                  : 'bg-amber-100 dark:bg-amber-900'
-              }`}>
-                <span className={`text-4xl font-bold ${
-                  score >= quiz.passingScore
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-amber-600 dark:text-amber-400'
+              <div className={`w-32 h-32 rounded-full flex items-center justify-center ${score >= quiz.passingScore
+                ? 'bg-green-100 dark:bg-green-900'
+                : 'bg-amber-100 dark:bg-amber-900'
                 }`}>
+                <span className={`text-4xl font-bold ${score >= quiz.passingScore
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-amber-600 dark:text-amber-400'
+                  }`}>
                   {score}%
                 </span>
               </div>
@@ -271,11 +320,16 @@ export function QuizPage() {
           </div>
 
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={handleRetry}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Retry Quiz
+            {!isReviewMode && (
+              <Button variant="outline" className="flex-1" onClick={handleRetry}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Retry Quiz
+              </Button>
+            )}
+            <Button variant="secondary" className="flex-1 border" onClick={() => setShowResults(false)}>
+              Review Answers
             </Button>
-            <Button className="flex-1" onClick={() => navigate('/student/courses')}>
+            <Button className="flex-1" onClick={() => navigate(`/student/courses/${quiz.courseId}/lessons/start`)}>
               Continue
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>

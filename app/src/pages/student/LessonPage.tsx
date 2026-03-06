@@ -23,6 +23,8 @@ import {
   Bookmark,
   Share2,
   MoreVertical,
+  FileQuestion,
+  ArrowRight,
 } from 'lucide-react';
 
 export function LessonPage() {
@@ -33,6 +35,7 @@ export function LessonPage() {
   const [course, setCourse] = useState<any>(null);
   const [courseLessons, setCourseLessons] = useState<any[]>([]);
   const [progress, setProgress] = useState<any>(null);
+  const [moduleQuizzes, setModuleQuizzes] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,22 +45,57 @@ export function LessonPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [courseRes, lessonsRes, progressRes] = await Promise.all([
+      const [courseRes, lessonsRes, progressRes, quizzesRes] = await Promise.all([
         api.get(`/courses/${courseId}`),
         api.get(`/lessons?courseId=${courseId}`),
-        api.get(`/progress?courseId=${courseId}`)
+        api.get(`/progress?courseId=${courseId}`),
+        api.get(`/quizzes?courseId=${courseId}`)
       ]);
       setCourse(courseRes.data);
       const fetchedLessons = lessonsRes.data;
       setCourseLessons(fetchedLessons);
 
-      const prog = progressRes.data[0] || { completedLessons: [], totalLessons: fetchedLessons.length, completionPercentage: 0 };
+      const prog = progressRes.data[0] || { completedLessons: [], passedQuizzes: [], totalLessons: fetchedLessons.length, completionPercentage: 0 };
       setProgress(prog);
 
-      if (lessonId === 'start' && fetchedLessons.length > 0) {
-        const incomplete = fetchedLessons.find((l: any) => !prog.completedLessons.includes(l.id));
-        const target = incomplete ? incomplete.id : fetchedLessons[0].id;
-        navigate(`/student/courses/${courseId}/lessons/${target}`, { replace: true });
+      const mQuizzes: Record<string, any> = {};
+      fetchedLessons.forEach((l: any) => {
+        if (l.module) {
+          const q = quizzesRes.data.find((quiz: any) => quiz.lessonId === l.id);
+          if (q && !mQuizzes[l.module]) mQuizzes[l.module] = q;
+        }
+      });
+      setModuleQuizzes(mQuizzes);
+
+      if (fetchedLessons.length > 0) {
+        if (lessonId === 'start') {
+          const incomplete = fetchedLessons.find((l: any) => !prog.completedLessons.includes(l.id));
+          const target = incomplete ? incomplete.id : fetchedLessons[0].id;
+          navigate(`/student/courses/${courseId}/lessons/${target}`, { replace: true });
+        } else {
+          // Check if the current requested lesson is locked
+          const reqIdx = fetchedLessons.findIndex((l: any) => l.id === lessonId);
+          if (reqIdx > 0) {
+            const prevLesson = fetchedLessons[reqIdx - 1];
+            let isLocked = !prog.completedLessons.includes(prevLesson.id);
+            if (!isLocked && fetchedLessons[reqIdx].module !== prevLesson.module) {
+              const prevModuleQuiz = mQuizzes[prevLesson.module];
+              if (prevModuleQuiz) {
+                const quizIdStr = prevModuleQuiz.id || prevModuleQuiz._id;
+                const attempted = (prog.quizAttempts || []).some((a: any) => a.quizId === quizIdStr);
+                if (!attempted) {
+                  isLocked = true;
+                }
+              }
+            }
+            if (isLocked) {
+              toast.error('You must complete previous lessons and exams first.');
+              const firstIncomplete = fetchedLessons.find((l: any) => !prog.completedLessons.includes(l.id));
+              const target = firstIncomplete ? firstIncomplete.id : fetchedLessons[0].id;
+              navigate(`/student/courses/${courseId}/lessons/${target}`, { replace: true });
+            }
+          }
+        }
       }
     } catch (error) {
       toast.error('Failed to load lesson data');
@@ -72,6 +110,32 @@ export function LessonPage() {
   const prevLesson = courseLessons[currentIndex - 1];
 
   const isCompleted = progress?.completedLessons?.includes(currentLesson?.id);
+
+  const isLastLessonInModule = !nextLesson || currentLesson?.module !== nextLesson?.module;
+  const lastModuleInCourse = courseLessons.length > 0 ? courseLessons[courseLessons.length - 1].module : null;
+  const isLastModule = currentLesson?.module === lastModuleInCourse;
+
+  const moduleQuiz = currentLesson?.module ? moduleQuizzes[currentLesson.module] : null;
+  const quizIdStr = moduleQuiz ? (moduleQuiz.id || moduleQuiz._id) : null;
+  const hasPassedQuiz = moduleQuiz && (progress?.passedQuizzes || []).includes(quizIdStr);
+  const hasAttemptedQuiz = moduleQuiz && (progress?.quizAttempts || []).some((a: any) => a.quizId === quizIdStr);
+  const isExamSatisfied = isLastModule ? hasPassedQuiz : hasAttemptedQuiz;
+
+  const showExamBlock = isLastLessonInModule && moduleQuiz && isCompleted;
+  const nextLessonLockedByExam = isLastLessonInModule && moduleQuiz && !isExamSatisfied;
+
+  let totalItems = courseLessons.length;
+  let completedItems = progress?.completedLessons?.length || 0;
+  const finalLesson = courseLessons[courseLessons.length - 1];
+  const finalModuleQuiz = finalLesson ? moduleQuizzes[finalLesson.module] : null;
+
+  if (finalModuleQuiz) {
+    totalItems += 1;
+    const quizIdStr = finalModuleQuiz.id || finalModuleQuiz._id;
+    const passed = (progress?.passedQuizzes || []).includes(quizIdStr);
+    if (passed) completedItems += 1;
+  }
+  const displayPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
   const handleMarkComplete = async (checked: boolean) => {
     if (!currentLesson || !course) return;
@@ -280,23 +344,65 @@ export function LessonPage() {
           </label>
 
           <Button
-            disabled={!nextLesson}
-            asChild={!!nextLesson}
+            disabled={!nextLesson || !isCompleted || nextLessonLockedByExam}
+            asChild={!!nextLesson && isCompleted && !nextLessonLockedByExam}
             className="w-full sm:w-auto hover:bg-primary/90"
           >
-            {nextLesson ? (
+            {nextLesson && isCompleted && !nextLessonLockedByExam ? (
               <Link to={`/student/courses/${courseId}/lessons/${nextLesson.id}`}>
                 Next Lesson
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Link>
             ) : (
-              <div className="cursor-not-allowed opacity-50 flex items-center">
+              <div className="cursor-not-allowed opacity-50 flex items-center" title={nextLesson && !isCompleted ? "Complete current lesson to unlock" : nextLessonLockedByExam ? "Complete module exam to unlock" : ""}>
                 Next Lesson
                 <ChevronRight className="h-4 w-4 ml-2" />
               </div>
             )}
           </Button>
         </motion.div>
+
+        {showExamBlock && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8">
+            <Card className="border-amber-200 bg-amber-50/50 shadow-sm relative overflow-hidden">
+              <div className={`absolute top-0 left-0 w-1 h-full ${isExamSatisfied ? 'bg-green-500' : 'bg-amber-500'}`} />
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div>
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <FileQuestion className={`h-6 w-6 ${isExamSatisfied ? 'text-green-600' : 'text-amber-600'}`} />
+                      Module Exam / Question Bank
+                    </h3>
+                    <p className="text-muted-foreground mt-2 text-sm leading-relaxed max-w-xl">
+                      You have completed all lessons in this module. {isLastModule ? 'Before completing this course, you must pass this final assessment.' : 'Before unlocking the next module session, you must take this assessment.'}
+                    </p>
+                    {isExamSatisfied && (
+                      <p className="text-green-600 font-medium mt-3 flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5" />
+                        {isLastModule ? 'You have passed this module exam!' : 'You have completed this module assessment!'}
+                      </p>
+                    )}
+                  </div>
+                  <div className="shrink-0 w-full md:w-auto flex flex-col items-stretch">
+                    {!isExamSatisfied ? (
+                      <Button size="lg" className="bg-amber-500 hover:bg-amber-600 text-white w-full" asChild>
+                        <Link to={`/student/quiz/${moduleQuiz.id || moduleQuiz._id}`}>
+                          {hasAttemptedQuiz ? 'Retry Exam' : 'Start Exam'} <ArrowRight className="h-4 w-4 ml-2" />
+                        </Link>
+                      </Button>
+                    ) : (
+                      <Button size="lg" variant="outline" className="w-full border-green-200 hover:bg-green-50 text-green-700" asChild>
+                        <Link to={`/student/quiz/${moduleQuiz.id || moduleQuiz._id}?mode=review`}>
+                          Review Exam <ArrowRight className="h-4 w-4 ml-2" />
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
 
       {/* Sidebar - Course Content & Progress */}
@@ -306,10 +412,10 @@ export function LessonPage() {
             <CardTitle className="text-lg font-bold">Course Content</CardTitle>
             <div className="mt-4 space-y-2">
               <div className="flex justify-between text-sm font-semibold text-slate-700 dark:text-slate-300">
-                <span>{progress?.completedLessons?.length || 0} / {courseLessons.length} lessons</span>
-                <span className="text-primary">{progress?.completionPercentage || 0}%</span>
+                <span>{completedItems} / {totalItems} items</span>
+                <span className="text-primary">{displayPercentage}%</span>
               </div>
-              <Progress value={progress?.completionPercentage || 0} className="h-2.5 rounded-full" />
+              <Progress value={displayPercentage} className="h-2.5 rounded-full" />
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -319,6 +425,35 @@ export function LessonPage() {
                   const isCompletedLesson = progress?.completedLessons?.includes(lesson.id);
                   const isActive = lesson.id === currentLesson.id;
                   const showModuleHeader = index === 0 || lesson.module !== courseLessons[index - 1].module;
+
+                  let isLocked = index > 0 && !progress?.completedLessons?.includes(courseLessons[index - 1].id);
+                  if (index > 0 && courseLessons[index].module !== courseLessons[index - 1].module) {
+                    const prevModuleQuiz = moduleQuizzes[courseLessons[index - 1].module];
+                    if (prevModuleQuiz) {
+                      const quizIdStr = prevModuleQuiz.id || prevModuleQuiz._id;
+                      const attempted = (progress?.quizAttempts || []).some((a: any) => a.quizId === quizIdStr);
+                      if (!attempted) {
+                        isLocked = true;
+                      }
+                    }
+                  }
+
+                  let hasPendingExam = false;
+                  const isLastInModule = index === courseLessons.length - 1 || courseLessons[index].module !== courseLessons[index + 1].module;
+                  if (isCompletedLesson && isLastInModule) {
+                    const modQuiz = moduleQuizzes[lesson.module];
+                    if (modQuiz) {
+                      const quizIdStr = modQuiz.id || modQuiz._id;
+                      const isLastModule = courseLessons.length > 0 && lesson.module === courseLessons[courseLessons.length - 1].module;
+                      if (isLastModule) {
+                        const passed = (progress?.passedQuizzes || []).includes(quizIdStr);
+                        if (!passed) hasPendingExam = true;
+                      } else {
+                        const attempted = (progress?.quizAttempts || []).some((a: any) => a.quizId === quizIdStr);
+                        if (!attempted) hasPendingExam = true;
+                      }
+                    }
+                  }
 
                   return (
                     <React.Fragment key={lesson.id}>
@@ -331,11 +466,14 @@ export function LessonPage() {
                       )}
                       <LessonCard
                         lesson={{ ...lesson, isCompleted: isCompletedLesson }}
-                        isLocked={false}
+                        isLocked={isLocked}
                         isActive={isActive}
+                        hasPendingExam={hasPendingExam}
                         variant="compact"
                         onClick={() => {
-                          navigate(`/student/courses/${courseId}/lessons/${lesson.id}`);
+                          if (!isLocked) {
+                            navigate(`/student/courses/${courseId}/lessons/${lesson.id}`);
+                          }
                         }}
                       />
                     </React.Fragment>

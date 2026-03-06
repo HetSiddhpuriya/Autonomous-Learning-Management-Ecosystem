@@ -401,11 +401,11 @@ export function QuestionBankPage() {
                 onChange={(e) => setNewQuestionData(prev => ({ ...prev, question: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Course *</label>
                 <Select value={newQuestionData.courseId} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, courseId: v }))}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full [&>span]:truncate">
                     <SelectValue placeholder="Select course" />
                   </SelectTrigger>
                   <SelectContent>
@@ -429,10 +429,10 @@ export function QuestionBankPage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 min-w-0">
               <label className="text-sm font-medium">Course Module *</label>
               <Select value={newQuestionData.skillMapped} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, skillMapped: v }))} disabled={!newQuestionData.courseId}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full [&>span]:truncate">
                   <SelectValue placeholder={newQuestionData.courseId ? "Select module" : "Select a course first"} />
                 </SelectTrigger>
                 <SelectContent>
