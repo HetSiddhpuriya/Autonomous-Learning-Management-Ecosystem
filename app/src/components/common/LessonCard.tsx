@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 interface LessonCardProps {
   lesson: Lesson;
   isLocked?: boolean;
+  isActive?: boolean;
   onClick?: () => void;
   onMarkComplete?: (completed: boolean) => void;
   delay?: number;
@@ -18,6 +19,7 @@ interface LessonCardProps {
 export function LessonCard({
   lesson,
   isLocked = false,
+  isActive = false,
   onClick,
   onMarkComplete,
   delay = 0,
@@ -39,11 +41,14 @@ export function LessonCard({
       >
         <div
           className={cn(
-            'flex items-center gap-3 p-3 rounded-lg transition-colors',
+            'flex items-center gap-3 p-3 rounded-lg transition-colors border',
             isLocked
-              ? 'opacity-60 cursor-not-allowed'
-              : 'hover:bg-muted cursor-pointer',
-            lesson.isCompleted && 'bg-green-50 dark:bg-green-900/20'
+              ? 'opacity-60 cursor-not-allowed border-transparent'
+              : 'cursor-pointer',
+            isActive
+              ? 'bg-primary/10 border-primary shadow-sm'
+              : 'border-transparent hover:bg-muted',
+            lesson.isCompleted && !isActive && 'bg-green-50 dark:bg-green-900/20'
           )}
           onClick={!isLocked ? onClick : undefined}
         >
@@ -89,9 +94,10 @@ export function LessonCard({
     >
       <Card
         className={cn(
-          'overflow-hidden transition-all',
-          isLocked ? 'opacity-60' : 'hover:shadow-md cursor-pointer',
-          lesson.isCompleted && 'border-green-200 dark:border-green-800'
+          'overflow-hidden transition-all border-2',
+          isLocked ? 'opacity-60 border-transparent' : 'hover:shadow-md cursor-pointer',
+          isActive ? 'border-primary shadow-md' : 'border-transparent',
+          lesson.isCompleted && !isActive && 'border-green-200 dark:border-green-800'
         )}
         onClick={!isLocked ? onClick : undefined}
       >
@@ -111,7 +117,7 @@ export function LessonCard({
                 <Play className="h-5 w-5 text-primary" />
               )}
             </div>
-            
+
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -133,7 +139,7 @@ export function LessonCard({
                   />
                 )}
               </div>
-              
+
               <div className="flex items-center gap-4 mt-3">
                 <Badge variant="secondary" className="text-xs">
                   <Clock className="h-3 w-3 mr-1" />

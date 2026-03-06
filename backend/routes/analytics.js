@@ -26,12 +26,16 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
 
         // Calculate Skill Mastery based on category completion
         const skillMap = {};
+        let totalCompletion = 0;
+        
         enrollments.forEach(enroll => {
             const course = enroll.courseId;
             if (!course) return;
 
             const prog = progresses.find(p => p.courseId.toString() === course._id.toString());
             const completion = prog ? prog.completionPercentage : 0;
+            
+            totalCompletion += completion;
 
             if (!skillMap[course.category]) {
                 skillMap[course.category] = { count: 0, total: 0 };
@@ -39,6 +43,8 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
             skillMap[course.category].total += completion;
             skillMap[course.category].count += 1;
         });
+        
+        const overallCompletionRatio = enrollments.length > 0 ? Math.round(totalCompletion / enrollments.length) : 0;
 
         const skillMastery = Object.keys(skillMap).map(category => ({
             skill: category,
@@ -72,6 +78,7 @@ router.get('/student', protect, authorize('student'), async (req, res) => {
             totalTimeSpent: totalTimeSpent, // seconds
             coursesCompleted,
             coursesEnrolled: enrollments.length,
+            overallCompletionRatio,
             averageScore,
             streakDays: 12, // Placeholder
             weeklyStudyHours: [2, 4, 3, 5, 2, 6, 1], // Placeholder

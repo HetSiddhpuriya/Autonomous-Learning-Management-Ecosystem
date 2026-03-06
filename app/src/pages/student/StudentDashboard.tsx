@@ -134,8 +134,8 @@ export function StudentDashboard() {
           delay={0.3}
         />
         <StatCard
-          title="Skills Mastered"
-          value={(analytics?.skillMastery || []).filter((s: any) => s.level >= 80).length}
+          title="Completion Ratio"
+          value={`${analytics?.overallCompletionRatio || 0}%`}
           icon={Target}
           delay={0.4}
         />

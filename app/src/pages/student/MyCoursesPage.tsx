@@ -27,8 +27,22 @@ export function MyCoursesPage() {
   const fetchEnrolledCourses = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/courses/enrolled/my');
-      setEnrolledCourses(data);
+      const [coursesRes, progressRes] = await Promise.all([
+        api.get('/courses/enrolled/my'),
+        api.get('/progress')
+      ]);
+
+      const progressMap: Record<string, number> = {};
+      progressRes.data.forEach((p: any) => {
+        progressMap[p.courseId] = p.completionPercentage || 0;
+      });
+
+      const coursesWithProgress = coursesRes.data.map((course: any) => ({
+        ...course,
+        progress: Math.round(progressMap[course._id || course.id] || 0)
+      }));
+
+      setEnrolledCourses(coursesWithProgress);
     } catch (error) {
       toast.error('Failed to load your courses');
     } finally {
@@ -36,9 +50,8 @@ export function MyCoursesPage() {
     }
   };
 
-  // For now, assume all enrolled are in progress since completion logic isn't fully robust
-  const completedCourses: Course[] = [];
-  const inProgressCourses = enrolledCourses;
+  const completedCourses = enrolledCourses.filter(c => (c as any).progress >= 100);
+  const inProgressCourses = enrolledCourses.filter(c => (c as any).progress < 100);
 
   const filterCourses = (courses: Course[]) => {
     return courses.filter(course =>
@@ -60,11 +73,22 @@ export function MyCoursesPage() {
 
   const displayedCourses = getCoursesForTab();
 
-  const handleContinue = (courseId: string) => {
-    // Typically you'd navigate to the actual learning module, e.g. /student/courses/:courseId/lessons/:lessonId
-    // For now we'll route back to details or the first lesson
-    toast.success('Continuing learning journey!');
-    navigate(`/courses/${courseId}`);
+  const handleContinue = async (courseId: string) => {
+    try {
+      const [{ data: lessons }, { data: progressData }] = await Promise.all([
+        api.get(`/lessons?courseId=${courseId}`),
+        api.get(`/progress?courseId=${courseId}`)
+      ]);
+
+      const progress = progressData[0] || { completedLessons: [] };
+      const incompleteLesson = lessons.find((l: any) => !progress.completedLessons.includes(l.id));
+      const targetLessonId = incompleteLesson ? incompleteLesson.id : (lessons[0]?.id || 'start');
+
+      navigate(`/student/courses/${courseId}/lessons/${targetLessonId}`);
+    } catch (error) {
+      toast.error('Failed to load course progress');
+      navigate(`/courses/${courseId}`);
+    }
   };
 
   return (
@@ -170,7 +194,7 @@ export function MyCoursesPage() {
                     <CourseCard
                       key={course.id}
                       course={course}
-                      progress={0}
+                      progress={(course as any).progress || 0}
                       showProgress={true}
                       showActions
                       variant={viewMode === 'list' ? 'horizontal' : 'default'}
