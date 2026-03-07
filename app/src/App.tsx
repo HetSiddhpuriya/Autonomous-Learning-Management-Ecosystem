@@ -29,6 +29,7 @@ import { LessonPage } from '@/pages/student/LessonPage';
 import { QuizPage } from '@/pages/student/QuizPage';
 import { WishlistPage } from '@/pages/student/WishlistPage';
 import { PaymentCheckoutPage } from '@/pages/student/PaymentCheckoutPage';
+import { CertificatePage } from '@/pages/student/CertificatePage';
 
 // Instructor Pages
 import { InstructorDashboard } from '@/pages/instructor/InstructorDashboard';
@@ -82,6 +83,7 @@ function App() {
                 <Route path="/student/courses/:courseId/lessons/:lessonId" element={<LessonPage />} />
                 <Route path="/student/quiz/:quizId" element={<QuizPage />} />
                 <Route path="/student/wishlist" element={<WishlistPage />} />
+                <Route path="/student/certificates" element={<CertificatePage />} />
               </Route>
 
               {/* Instructor Routes */}

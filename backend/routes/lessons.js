@@ -32,8 +32,8 @@ router.get('/:id', protect, async (req, res) => {
 router.post('/', protect, authorize('instructor', 'admin'), async (req, res) => {
     try {
         const lesson = await Lesson.create(req.body);
-        // Update course lessonsCount
-        await Course.findByIdAndUpdate(req.body.courseId, { $inc: { lessonsCount: 1 } });
+        // Update course lessonsCount and duration
+        await Course.findByIdAndUpdate(req.body.courseId, { $inc: { lessonsCount: 1, duration: lesson.duration || 0 } });
         res.status(201).json(lesson);
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -65,8 +65,19 @@ router.put('/reorder', protect, authorize('instructor', 'admin'), async (req, re
 // PATCH /api/lessons/:id
 router.patch('/:id', protect, authorize('instructor', 'admin'), async (req, res) => {
     try {
+        const oldLesson = await Lesson.findById(req.params.id);
+        const oldDuration = oldLesson ? (oldLesson.duration || 0) : 0;
+
         const lesson = await Lesson.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
         if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
+
+        if (req.body.duration !== undefined) {
+             const durationDiff = (lesson.duration || 0) - oldDuration;
+             if (durationDiff !== 0) {
+                 await Course.findByIdAndUpdate(lesson.courseId, { $inc: { duration: durationDiff } });
+             }
+        }
+
         res.json(lesson);
     } catch (err) {
         res.status(400).json({ message: err.message });
@@ -78,7 +89,7 @@ router.delete('/:id', protect, authorize('instructor', 'admin'), async (req, res
     try {
         const lesson = await Lesson.findByIdAndDelete(req.params.id);
         if (!lesson) return res.status(404).json({ message: 'Lesson not found' });
-        await Course.findByIdAndUpdate(lesson.courseId, { $inc: { lessonsCount: -1 } });
+        await Course.findByIdAndUpdate(lesson.courseId, { $inc: { lessonsCount: -1, duration: -(lesson.duration || 0) } });
         res.json({ message: 'Lesson deleted' });
     } catch (err) {
         res.status(500).json({ message: err.message });

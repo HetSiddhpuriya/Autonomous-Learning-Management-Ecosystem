@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Receipt,
+  Award,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -44,6 +45,7 @@ const studentNavItems: NavItem[] = [
   { label: 'My Courses', href: '/student/courses', icon: BookOpen },
   { label: 'Recommendations', href: '/student/recommendations', icon: Lightbulb },
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
+  { label: 'Certificates', href: '/student/certificates', icon: Award },
   { label: 'Wishlist', href: '/student/wishlist', icon: Heart },
   { label: 'Discussions', href: '/student/discussions', icon: MessageSquare },
   { label: 'Settings', href: '/student/settings', icon: Settings },
@@ -189,56 +191,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               </nav>
             </div>
 
-            {/* Quick Stats */}
-            {!isCollapsed && (
-              <div className="mt-auto px-3 py-4">
-                <div className="rounded-lg bg-muted p-4">
-                  <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Quick Stats
-                  </p>
-                  {user?.role === 'student' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Courses</span>
-                        <span className="font-medium text-emerald-600 font-bold">{studentStats.activeCourses} active</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Spent</span>
-                        <span className="font-bold">₹{studentStats.totalSpent.toLocaleString('en-IN')}</span>
-                      </div>
-                    </div>
-                  )}
-                  {user?.role === 'instructor' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Students</span>
-                        <span className="font-medium">1,250</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Courses</span>
-                        <span className="font-medium">5 published</span>
-                      </div>
-                    </div>
-                  )}
-                  {user?.role === 'admin' && (
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Total Users</span>
-                        <span className="font-medium">{adminStats.totalUsers.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Active Now</span>
-                        <span className="font-medium">{adminStats.activeNow.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Active Courses</span>
-                        <span className="font-medium">{adminStats.activeCourses.toLocaleString()}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </ScrollArea>
           <div className="p-4 border-t space-y-2 shrink-0 bg-background/50 backdrop-blur">
             {onToggleCollapse && (
