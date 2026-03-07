@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Users, Star, BookOpen, Play } from 'lucide-react';
+import { Clock, Users, Star, BookOpen, Play, Award, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CourseCardProps {
@@ -16,6 +16,7 @@ interface CourseCardProps {
   delay?: number;
   onContinue?: () => void;
   onEnroll?: () => void;
+  onCertificate?: () => void;
 }
 
 export function CourseCard({
@@ -27,6 +28,7 @@ export function CourseCard({
   delay = 0,
   onContinue,
   onEnroll,
+  onCertificate,
 }: CourseCardProps) {
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -101,13 +103,33 @@ export function CourseCard({
                     )
                   )}
                 </div>
-                {showProgress && progress > 0 && (
+                {showProgress && progress >= 0 && progress < 100 && (
                   <div className="mt-3">
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Progress</span>
                       <span className="font-medium">{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
+                  </div>
+                )}
+                {showProgress && progress >= 100 && (
+                  <div className="mt-3 flex items-center justify-between">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Completed
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onCertificate) onCertificate();
+                      }}
+                    >
+                      <Award className="h-4 w-4 mr-1.5" />
+                      Certificate
+                    </Button>
                   </div>
                 )}
               </div>
@@ -184,13 +206,33 @@ export function CourseCard({
             )}
           </div>
 
-          {showProgress && progress > 0 && (
+          {showProgress && progress >= 0 && progress < 100 && (
             <div className="mt-4">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-muted-foreground">Progress</span>
                 <span className="font-medium">{progress}%</span>
               </div>
               <Progress value={progress} className="h-2" />
+            </div>
+          )}
+          {showProgress && progress >= 100 && (
+            <div className="mt-4 flex items-center justify-between">
+              <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Completed
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20 h-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onCertificate) onCertificate();
+                }}
+              >
+                <Award className="h-4 w-4 mr-1.5" />
+                Certificate
+              </Button>
             </div>
           )}
 

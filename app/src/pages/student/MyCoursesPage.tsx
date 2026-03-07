@@ -10,11 +10,15 @@ import { Search, Grid3X3, List } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 import type { Course } from '@/types';
+import { useAuth } from '@/context';
+import { CertificateModal } from '@/components/common/CertificateModal';
 
 export function MyCoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('all');
+  const { user } = useAuth();
+  const [selectedCertificateCourse, setSelectedCertificateCourse] = useState<Course | null>(null);
 
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -200,6 +204,7 @@ export function MyCoursesPage() {
                       variant={viewMode === 'list' ? 'horizontal' : 'default'}
                       delay={index * 0.1}
                       onContinue={() => handleContinue(course.id)}
+                      onCertificate={() => setSelectedCertificateCourse(course)}
                     />
                   );
                 })}
@@ -225,6 +230,14 @@ export function MyCoursesPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={!!selectedCertificateCourse}
+        onClose={() => setSelectedCertificateCourse(null)}
+        course={selectedCertificateCourse}
+        studentName={user?.name || 'Student'}
+      />
     </div>
   );
 }
