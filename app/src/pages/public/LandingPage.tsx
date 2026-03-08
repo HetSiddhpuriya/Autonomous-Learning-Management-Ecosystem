@@ -17,6 +17,12 @@ import {
   Zap,
   TrendingUp,
   MessageCircle,
+  BarChart3,
+  Code2,
+  Smartphone,
+  Cloud,
+  Palette,
+  Briefcase,
 } from 'lucide-react';
 
 export function LandingPage() {
@@ -67,12 +73,12 @@ export function LandingPage() {
   ];
 
   const categories = [
-    { name: 'Data Science', courses: 45, icon: '📊' },
-    { name: 'Web Development', courses: 78, icon: '💻' },
-    { name: 'Mobile Development', courses: 32, icon: '📱' },
-    { name: 'Cloud Computing', courses: 28, icon: '☁️' },
-    { name: 'Design', courses: 56, icon: '🎨' },
-    { name: 'Business', courses: 43, icon: '💼' },
+    { name: 'Data Science', courses: 45, icon: BarChart3, color: 'text-blue-500' },
+    { name: 'Web Development', courses: 78, icon: Code2, color: 'text-emerald-500' },
+    { name: 'Mobile Development', courses: 32, icon: Smartphone, color: 'text-purple-500' },
+    { name: 'Cloud Computing', courses: 28, icon: Cloud, color: 'text-sky-500' },
+    { name: 'Design', courses: 56, icon: Palette, color: 'text-pink-500' },
+    { name: 'Business', courses: 43, icon: Briefcase, color: 'text-amber-500' },
   ];
 
   const testimonials = [
@@ -176,7 +182,7 @@ export function LandingPage() {
                 </Link>
               </Button>
               <Button size="lg" variant="outline" className="gap-2" asChild>
-                <Link to="/#courses">
+                <Link to="/courses">
                   Explore Courses
                   <Play className="h-4 w-4" />
                 </Link>
@@ -307,7 +313,9 @@ export function LandingPage() {
                 className="group cursor-pointer"
               >
                 <div className="p-6 rounded-xl bg-background border hover:shadow-lg hover:border-primary/50 transition-all duration-300 flex flex-col items-center text-center">
-                  <div className="text-4xl mb-4">{category.icon}</div>
+                  <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+                    <category.icon className={`h-8 w-8 ${category.color}`} />
+                  </div>
                   <h3 className="text-lg font-semibold mb-1 group-hover:text-primary transition-colors">
                     {category.name}
                   </h3>

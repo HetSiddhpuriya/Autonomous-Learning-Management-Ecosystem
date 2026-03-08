@@ -47,6 +47,7 @@ import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { UsersPage } from '@/pages/admin/UsersPage';
 import { CoursesPage } from '@/pages/admin/CoursesPage';
 import { PlatformAnalyticsPage } from '@/pages/admin/PlatformAnalyticsPage';
+import { ArenaAnalyticsPage } from '@/pages/admin/ArenaAnalyticsPage';
 
 function App() {
   return (
@@ -110,6 +111,7 @@ function App() {
                 <Route path="/admin/students" element={<UsersPage />} />
                 <Route path="/admin/courses" element={<CoursesPage />} />
                 <Route path="/admin/analytics" element={<PlatformAnalyticsPage />} />
+                <Route path="/admin/arena-analytics" element={<ArenaAnalyticsPage />} />
                 <Route path="/admin/settings" element={<SettingsPage />} />
               </Route>
 

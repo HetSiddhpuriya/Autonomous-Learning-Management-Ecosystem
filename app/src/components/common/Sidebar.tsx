@@ -68,6 +68,7 @@ const adminNavItems: NavItem[] = [
   { label: 'Students', href: '/admin/students', icon: Users },
   { label: 'Courses', href: '/admin/courses', icon: GraduationCap },
   { label: 'Platform Analytics', href: '/admin/analytics', icon: BarChart3 },
+  { label: 'Arena Analytics', href: '/admin/arena-analytics', icon: TrendingUp },
   { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
