@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown, Check, Info, AlertTriangle, XCircle, Zap } from 'lucide-react';
+import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown, Check, Info, AlertTriangle, XCircle, Zap, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import api from '@/lib/api';
@@ -258,6 +258,12 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
                     <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
+                  {user?.role === 'student' && (
+                    <DropdownMenuItem onClick={() => navigate('/student/wishlist')}>
+                      <Heart className="mr-2 h-4 w-4" />
+                      Wishlist
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate(user ? `/${user.role}/settings` : '/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings

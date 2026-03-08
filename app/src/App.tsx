@@ -30,6 +30,7 @@ import { QuizPage } from '@/pages/student/QuizPage';
 import { WishlistPage } from '@/pages/student/WishlistPage';
 import { PaymentCheckoutPage } from '@/pages/student/PaymentCheckoutPage';
 import { CertificatePage } from '@/pages/student/CertificatePage';
+import { PracticeArenaPage } from '@/pages/student/PracticeArenaPage';
 
 // Instructor Pages
 import { InstructorDashboard } from '@/pages/instructor/InstructorDashboard';
@@ -39,6 +40,7 @@ import { LessonsPage } from '@/pages/instructor/LessonsPage';
 import { QuestionBankPage } from '@/pages/instructor/QuestionBankPage';
 import { StudentsPage } from '@/pages/instructor/StudentsPage';
 import { AnalyticsPage } from '@/pages/instructor/AnalyticsPage';
+import { PracticeArenaManagement } from '@/pages/instructor/PracticeArenaManagement';
 
 // Admin Pages
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
@@ -84,6 +86,7 @@ function App() {
                 <Route path="/student/quiz/:quizId" element={<QuizPage />} />
                 <Route path="/student/wishlist" element={<WishlistPage />} />
                 <Route path="/student/certificates" element={<CertificatePage />} />
+                <Route path="/student/practice" element={<PracticeArenaPage />} />
               </Route>
 
               {/* Instructor Routes */}
@@ -97,6 +100,7 @@ function App() {
                 <Route path="/instructor/students" element={<StudentsPage />} />
                 <Route path="/instructor/analytics" element={<AnalyticsPage />} />
                 <Route path="/instructor/settings" element={<SettingsPage />} />
+                <Route path="/instructor/practice" element={<PracticeArenaManagement />} />
               </Route>
 
               {/* Admin Routes */}

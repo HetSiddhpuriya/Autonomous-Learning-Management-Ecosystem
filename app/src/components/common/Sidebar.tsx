@@ -46,7 +46,7 @@ const studentNavItems: NavItem[] = [
   { label: 'Recommendations', href: '/student/recommendations', icon: Lightbulb },
   { label: 'Progress', href: '/student/progress', icon: TrendingUp },
   { label: 'Certificates', href: '/student/certificates', icon: Award },
-  { label: 'Wishlist', href: '/student/wishlist', icon: Heart },
+  { label: 'Practice Arena', href: '/student/practice', icon: Lightbulb },
   { label: 'Discussions', href: '/student/discussions', icon: MessageSquare },
   { label: 'Settings', href: '/student/settings', icon: Settings },
 ];
@@ -58,6 +58,7 @@ const instructorNavItems: NavItem[] = [
   { label: 'Question Bank', href: '/instructor/questions', icon: FileQuestion },
   { label: 'Students', href: '/instructor/students', icon: Users },
   { label: 'Analytics', href: '/instructor/analytics', icon: BarChart3 },
+  { label: 'Practice Arena', href: '/instructor/practice', icon: Lightbulb },
   { label: 'Settings', href: '/instructor/settings', icon: Settings },
 ];
 
