@@ -56,6 +56,7 @@ export function SettingsPage() {
     name: user?.name || '',
     email: user?.email || '',
     avatar: user?.avatar || '',
+    bio: user?.bio || '',
   });
 
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -133,6 +134,7 @@ export function SettingsPage() {
         name: user.name || '',
         email: user.email || '',
         avatar: user.avatar || '',
+        bio: user.bio || '',
       });
     }
   }, [user]);
@@ -155,7 +157,7 @@ export function SettingsPage() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await updateUser({ name: formData.name, email: formData.email, avatar: formData.avatar });
+      await updateUser({ name: formData.name, email: formData.email, avatar: formData.avatar, bio: formData.bio });
       toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
@@ -288,6 +290,8 @@ export function SettingsPage() {
                   <textarea
                     id="bio"
                     rows={4}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     className="w-full p-3 rounded-lg border resize-none focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="Tell us about yourself..."
                   />

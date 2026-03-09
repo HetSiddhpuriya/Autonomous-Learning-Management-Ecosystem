@@ -128,7 +128,7 @@ router.patch('/:id', protect, async (req, res) => {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        const { name, email, avatar, isActive, currentPassword, newPassword } = req.body;
+        const { name, email, avatar, bio, isActive, currentPassword, newPassword } = req.body;
 
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -143,6 +143,7 @@ router.patch('/:id', protect, async (req, res) => {
         if (name !== undefined) user.name = name;
         if (email !== undefined) user.email = email;
         if (avatar !== undefined) user.avatar = avatar;
+        if (bio !== undefined) user.bio = bio;
         if (isActive !== undefined && req.user.role === 'admin') user.isActive = isActive;
         if (req.body.status !== undefined && req.user.role === 'admin') {
             user.status = req.body.status;

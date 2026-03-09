@@ -1,0 +1,37 @@
+{
+  "courses": [
+    {
+      "id": "69ae371f6746798afdeb95c2",
+      "title": "Advanced Machine Learning"
+    },
+    {
+      "id": "69ae371f6746798afdeb95c3",
+      "title": "Web Development Bootcamp"
+    },
+    {
+      "id": "69ae371f6746798afdeb95c4",
+      "title": "Data Structures & Algorithms"
+    },
+    {
+      "id": "69ae371f6746798afdeb95c5",
+      "title": "UI/UX Design Fundamentals"
+    },
+    {
+      "id": "69ae371f6746798afdeb95c6",
+      "title": "Cloud Computing with AWS"
+    },
+    {
+      "id": "69ae6578f4638ad34fd7542e",
+      "title": "Full Stack Web Development with MERN Stack"
+    }
+  ],
+  "moduleLessons": {
+    "": "69ae371f6746798afdeb95c9",
+    "Web Development Fundamentals": "69aed6c8d0a604ed2452fb09",
+    "Frontend Development with React": "69aed6f2d0a604ed2452fb15",
+    "Backend Development with Node & Express": "69aed740d0a604ed2452fb2d",
+    "Database with MongoDB": "69aed772d0a604ed2452fb39",
+    "Authentication & Security": "69aed791d0a604ed2452fb41",
+    "Deployment & Production": "69aed7bed0a604ed2452fb51"
+  }
+}
