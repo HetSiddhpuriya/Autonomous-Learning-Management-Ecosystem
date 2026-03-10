@@ -16,6 +16,7 @@ import moduleRoutes from './routes/modules.js';
 import notificationRoutes from './routes/notifications.js';
 import uploadRoutes from './routes/upload.js';
 import practiceRoutes from './routes/practice.js';
+import aiRoutes from './routes/ai.js';
 import path from 'path';
 
 const app = express();
@@ -51,6 +52,7 @@ app.use('/api/modules', moduleRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/practice', practiceRoutes);
+app.use('/api/ai', aiRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {

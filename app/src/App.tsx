@@ -48,6 +48,7 @@ import { UsersPage } from '@/pages/admin/UsersPage';
 import { CoursesPage } from '@/pages/admin/CoursesPage';
 import { PlatformAnalyticsPage } from '@/pages/admin/PlatformAnalyticsPage';
 import { ArenaAnalyticsPage } from '@/pages/admin/ArenaAnalyticsPage';
+import { ChatbotButton } from '@/components/chatbot/ChatbotButton';
 
 function App() {
   return (
@@ -118,6 +119,7 @@ function App() {
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <ChatbotButton />
           </Router>
         </NotificationProvider>
       </AuthProvider>
