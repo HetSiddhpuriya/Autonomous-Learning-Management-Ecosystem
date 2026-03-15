@@ -61,6 +61,7 @@ export function SettingsPage() {
 
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+  const [emailingReceiptId, setEmailingReceiptId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -126,6 +127,23 @@ export function SettingsPage() {
     doc.text(`INR ${transaction.amount?.toLocaleString('en-IN') || '4,999.00'}`, 180, y + 21, { align: 'right' });
 
     doc.save(`LearnFlux_Receipt_${transaction.transactionId || 'TXN'}.pdf`);
+  };
+
+  const handleEmailReceipt = async (transaction: any) => {
+    if (!transaction.courseId?._id && !transaction.courseId?.id) return;
+    
+    const courseId = transaction.courseId._id || transaction.courseId.id;
+    setEmailingReceiptId(transaction.id);
+    
+    try {
+      await api.post(`/courses/${courseId}/email-receipt`);
+      toast.success('Receipt sent to your email successfully!');
+    } catch (err: any) {
+      console.error('Failed to email receipt:', err);
+      toast.error(err.response?.data?.message || 'Failed to email receipt');
+    } finally {
+      setEmailingReceiptId(null);
+    }
   };
 
   useEffect(() => {
@@ -513,16 +531,31 @@ export function SettingsPage() {
                             <td className="py-4 px-4 text-right font-bold">
                               ₹{transaction.amount?.toLocaleString('en-IN') || '4,999.00'}
                             </td>
-                            <td className="py-4 px-4 text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                onClick={() => downloadReceipt(transaction)}
-                              >
-                                <Download className="h-4 w-4 text-primary" />
-                              </Button>
-                            </td>
+                              <td className="py-4 px-4 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title="Download Receipt"
+                                  onClick={() => downloadReceipt(transaction)}
+                                >
+                                  <Download className="h-4 w-4 text-primary" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 ml-1"
+                                  title="Email Receipt"
+                                  disabled={emailingReceiptId === transaction.id}
+                                  onClick={() => handleEmailReceipt(transaction)}
+                                >
+                                  {emailingReceiptId === transaction.id ? (
+                                    <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                                  ) : (
+                                    <Mail className="h-4 w-4 text-primary" />
+                                  )}
+                                </Button>
+                              </td>
                           </tr>
                         ))}
                       </tbody>

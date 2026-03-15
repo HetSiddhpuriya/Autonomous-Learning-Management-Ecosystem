@@ -5,6 +5,7 @@ import Module from '../models/Module.js';
 import Lesson from '../models/Lesson.js';
 import Notification from '../models/Notification.js';
 import { protect, authorize } from '../middleware/auth.js';
+import sendCoursePurchaseEmail from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -215,6 +216,20 @@ router.post('/:id/enroll', protect, authorize('student'), async (req, res) => {
             link: '/instructor/students'
         });
 
+        // Send Purchase Confirmation Email to Student
+        try {
+            await sendCoursePurchaseEmail({
+                email: req.user.email,
+                name: req.user.name,
+                courseTitle: course.title,
+                amount: amount || course.price,
+                transactionId: transactionId
+            });
+        } catch (emailError) {
+            console.error('Failed to send purchase email:', emailError);
+            // We don't want to fail the enrollment if the email fails.
+        }
+
         res.status(201).json({ message: 'Enrolled successfully' });
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -229,6 +244,39 @@ router.get('/enrolled/my', protect, authorize('student'), async (req, res) => {
         res.json(courses);
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /api/courses/:id/email-receipt - Manually resend purchase confirmation email
+router.post('/:id/email-receipt', protect, authorize('student'), async (req, res) => {
+    try {
+        console.log(`[EMAIL RECEIPT] Student ${req.user.email} requested receipt for course ${req.params.id}`);
+        const course = await Course.findById(req.params.id);
+        if (!course) {
+            console.log(`[EMAIL RECEIPT] Error: Course not found`);
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        const enrollment = await Enrollment.findOne({ studentId: req.user._id, courseId: course._id });
+        if (!enrollment) {
+            console.log(`[EMAIL RECEIPT] Error: Student not enrolled in course`);
+            return res.status(400).json({ message: 'Not enrolled in this course' });
+        }
+
+        console.log(`[EMAIL RECEIPT] Sending email via Ethereal/SMTP...`);
+        await sendCoursePurchaseEmail({
+            email: req.user.email,
+            name: req.user.name,
+            courseTitle: course.title,
+            amount: enrollment.amount || course.price,
+            transactionId: enrollment.transactionId
+        });
+
+        console.log(`[EMAIL RECEIPT] Email supposedly sent successfully!`);
+        res.json({ message: 'Receipt emailed successfully' });
+    } catch (err) {
+        console.error('[EMAIL RECEIPT] Failed to manually send purchase email:', err);
+        res.status(500).json({ message: 'Failed to send email' });
     }
 });
 
