@@ -24,6 +24,7 @@ export function PaymentCheckoutPage() {
     const [upiId, setUpiId] = useState('');
     const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success'>('idle');
     const [transactionId, setTransactionId] = useState('');
+    const [currentStepIndex, setCurrentStepIndex] = useState(0);
     const [cardDetails, setCardDetails] = useState({
         number: '',
         expiry: '',
@@ -78,8 +79,14 @@ export function PaymentCheckoutPage() {
     const handlePayment = async () => {
         try {
             setPaymentStatus('processing');
-            // Simulate payment processing time
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            setCurrentStepIndex(0);
+            
+            // Step 1: Payment Request Sent To UPI App / Bank
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            setCurrentStepIndex(1);
+            
+            // Step 2: Waiting For Payment Confirmation
+            await new Promise(resolve => setTimeout(resolve, 2500));
 
             const tid = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase();
 
@@ -88,6 +95,10 @@ export function PaymentCheckoutPage() {
                 paymentMethod: paymentMethod,
                 amount: course?.price || 4999
             });
+
+            // Step 3: Payment Successful
+            setCurrentStepIndex(2);
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             setTransactionId(tid);
             setPaymentStatus('success');
@@ -524,25 +535,26 @@ export function PaymentCheckoutPage() {
                     <motion.div
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center space-y-6"
+                        className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full space-y-6"
                     >
-                        <div className="relative w-20 h-20 mx-auto">
-                            <div className="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
-                            <motion.div
-                                className="absolute inset-0 border-4 border-red-600 rounded-full border-t-transparent"
-                                animate={{ rotate: 360 }}
-                                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                            ></motion.div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Shield className="h-8 w-8 text-red-600" />
-                            </div>
-                        </div>
-                        <div>
+                        <div className="text-center">
                             <h3 className="text-xl font-bold text-slate-800">Processing Payment</h3>
                             <p className="text-sm text-slate-500 mt-2">Please do not refresh or close the window. We are securely communicating with your bank.</p>
                         </div>
-                        <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            <Loader2 className="h-3 w-3 animate-spin" /> Verifying Transaction
+                        
+                        <div className="space-y-4 mt-6 bg-slate-50 rounded-xl p-4 border border-slate-100">
+                            {[
+                                paymentMethod === 'upi' ? "Payment Request Sent To UPI App" : "Payment Request Sent To Bank",
+                                "Waiting For Payment Confirmation",
+                                "Payment Successful"
+                            ].map((step, idx) => (
+                                <div key={idx} className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center ${currentStepIndex > idx ? 'bg-emerald-100 text-emerald-600' : currentStepIndex === idx ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-400'}`}>
+                                        {currentStepIndex > idx ? <CheckCircle2 className="w-5 h-5" /> : currentStepIndex === idx ? <Loader2 className="w-5 h-5 animate-spin" /> : <div className="w-3 h-3 rounded-full bg-slate-300" />}
+                                    </div>
+                                    <span className={`text-sm font-bold ${currentStepIndex >= idx ? 'text-slate-800' : 'text-slate-400'}`}>{step}</span>
+                                </div>
+                            ))}
                         </div>
                     </motion.div>
                 </div>
@@ -550,80 +562,101 @@ export function PaymentCheckoutPage() {
 
             {/* Success View Overlay */}
             {paymentStatus === 'success' && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#F5F7FA]">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
                     <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="max-w-2xl w-full px-4"
+                        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                        className="max-w-xl w-full mx-auto"
                     >
-                        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
-                            <div className="bg-emerald-600 p-12 text-center text-white relative">
-                                <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                                    <Zap className="w-full h-full -rotate-12 scale-150" />
+                        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative border border-slate-100">
+                            {/* Top Decorative Header */}
+                            <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 px-8 py-10 text-center text-white relative overflow-hidden">
+                                <div className="absolute -top-12 -right-12 opacity-10 pointer-events-none">
+                                    <Zap className="w-56 h-56 -rotate-12" />
                                 </div>
                                 <motion.div
                                     initial={{ scale: 0 }}
                                     animate={{ scale: 1 }}
-                                    transition={{ type: "spring", damping: 12 }}
-                                    className="bg-white/20 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 backdrop-blur-md"
+                                    transition={{ type: "spring", damping: 15, delay: 0.1 }}
+                                    className="bg-white/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5 backdrop-blur-md shadow-inner"
                                 >
-                                    <CheckCircle2 className="h-12 w-12 text-white" />
+                                    <CheckCircle2 className="h-10 w-10 text-white" />
                                 </motion.div>
-                                <h2 className="text-3xl font-black tracking-tight">Payment Successful!</h2>
-                                <p className="text-emerald-100 mt-2 text-lg font-medium">Welcome to the course, {user?.name?.split(' ')[0]}</p>
+                                <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">Payment Successful!</h2>
+                                <p className="text-emerald-100 font-medium text-sm sm:text-base opacity-90">
+                                    Your transaction was completed successfully
+                                </p>
                             </div>
 
-                            <div className="p-8">
-                                <div className="grid grid-cols-2 gap-8 mb-8">
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Transaction ID</p>
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-mono font-bold text-slate-700">{transactionId}</p>
-                                            <button className="text-slate-300 hover:text-primary transition-colors">
-                                                <Copy className="h-3 w-3" />
-                                            </button>
+                            {/* Ticket Zig-Zag Divider Effect */}
+                            <div className="relative h-4 bg-white -mt-2 z-10" style={{ backgroundImage: "radial-gradient(circle at 8px top, transparent 8px, white 9px)", backgroundSize: "16px 16px", backgroundPosition: "0 0" }}></div>
+                            <div className="flex justify-between items-center absolute w-full -mt-2 z-20 px-0">
+                                <div className="w-4 h-8 bg-slate-900/60 backdrop-blur-sm rounded-r-full -translate-x-full"></div>
+                                <div className="border-t-2 border-dashed border-emerald-500/20 flex-1 mx-4"></div>
+                                <div className="w-4 h-8 bg-slate-900/60 backdrop-blur-sm rounded-l-full translate-x-full"></div>
+                            </div>
+
+                            <div className="px-8 pb-8 pt-6">
+                                <div className="space-y-6">
+                                    {/* Grid Details */}
+                                    <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Transaction ID</p>
+                                            <div className="flex items-center gap-2 group">
+                                                <p className="font-mono font-semibold text-slate-800 text-sm sm:text-base">{transactionId}</p>
+                                                <button onClick={() => { navigator.clipboard.writeText(transactionId); toast.success('Copied to clipboard'); }} className="text-slate-300 hover:text-emerald-500 transition-colors opacity-0 group-hover:opacity-100">
+                                                    <Copy className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5 text-right">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Date & Time</p>
+                                            <p className="font-semibold text-slate-800 text-sm sm:text-base">{new Date().toLocaleDateString('en-GB')} • {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Payment Method</p>
+                                            <p className="font-bold text-emerald-600 uppercase text-sm sm:text-base flex items-center gap-1.5">
+                                                <Shield className="w-3.5 h-3.5" /> {paymentMethod.replace('_', ' ')}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-1.5 text-right">
+                                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</p>
+                                            <p className="text-2xl font-black text-slate-900">₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
                                         </div>
                                     </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Date & Time</p>
-                                        <p className="font-bold text-slate-700">{new Date().toLocaleDateString()} • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Payment Method</p>
-                                        <p className="font-bold text-emerald-600 uppercase text-sm">{paymentMethod.replace('_', ' ')}</p>
-                                    </div>
-                                    <div className="space-y-1 text-right">
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Amount</p>
-                                        <p className="text-xl font-black text-slate-800">₹{price.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</p>
+
+                                    {/* Course Details Box */}
+                                    <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-100 flex items-center gap-4 hover:border-emerald-100 transition-colors">
+                                        <div className="w-16 h-12 rounded-lg bg-slate-200 overflow-hidden shrink-0 shadow-sm border border-slate-200/60">
+                                            <img src={course.thumbnail} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest mb-0.5">Purchased Course</p>
+                                            <h4 className="font-bold text-slate-800 text-sm sm:text-base truncate">{course.title}</h4>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 flex items-center gap-4 mb-8">
-                                    <img src={course.thumbnail} className="w-20 h-14 rounded-lg object-cover shadow-sm" />
-                                    <div>
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Purchased Course</p>
-                                        <h4 className="font-bold text-slate-800 line-clamp-1">{course.title}</h4>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col sm:flex-row gap-4">
+                                {/* Actions */}
+                                <div className="flex flex-col sm:flex-row gap-3 mt-8">
                                     <Button
                                         onClick={downloadReceipt}
                                         variant="outline"
-                                        className="flex-1 h-12 rounded-xl font-bold gap-2 border-2 hover:bg-slate-50"
+                                        className="flex-1 h-12 rounded-xl font-bold gap-2 border-2 hover:bg-slate-50 text-slate-700"
                                     >
                                         <Download className="h-4 w-4" /> Download Receipt
                                     </Button>
                                     <Button
                                         onClick={() => navigate('/student/courses')}
-                                        className="flex-1 h-12 rounded-xl font-bold bg-slate-900 hover:bg-slate-800"
+                                        className="flex-1 h-12 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
                                     >
                                         Start Learning
                                     </Button>
                                 </div>
                             </div>
                         </div>
-                        <p className="text-center mt-6 text-sm text-slate-500">
+                        <p className="text-center mt-5 text-sm font-medium text-white/80 drop-shadow-md">
                             A copy of the receipt was sent to <b>{user?.email}</b>
                         </p>
                     </motion.div>
