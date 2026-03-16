@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { mockQuizzes, mockCourses } from '@/mock/data';
+import api from '@/lib/api';
+import { toast } from 'sonner';
 import {
   Plus,
   Search,
@@ -22,22 +23,89 @@ import {
 export function QuestionBankPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState('all');
+  const [selectedModule, setSelectedModule] = useState('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [difficultyFilter, setDifficultyFilter] = useState('all');
 
-  const allQuestions = mockQuizzes.flatMap(q => 
-    q.questions.map(question => ({
+  const [myCourses, setMyCourses] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newQuestionData, setNewQuestionData] = useState({
+    courseId: '',
+    difficulty: 'medium',
+    question: '',
+    options: ['', '', '', ''],
+    correctAnswer: 0,
+    skillMapped: '',
+    explanation: ''
+  });
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
+  const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
+  const [courseModules, setCourseModules] = useState<{ name: string, lessonId: string }[]>([]);
+
+  useEffect(() => {
+    if (newQuestionData.courseId) {
+      api.get(`/lessons?courseId=${newQuestionData.courseId}`).then(res => {
+        const modulesSet = new Set<string>();
+        const modulesMap = new Map<string, string>();
+        res.data.forEach((l: any) => {
+          if (l.module && !modulesSet.has(l.module)) {
+            modulesSet.add(l.module);
+            modulesMap.set(l.module, l._id || l.id);
+          }
+        });
+        setCourseModules(Array.from(modulesSet).map(name => ({ name, lessonId: modulesMap.get(name)! })));
+      }).catch(err => console.error(err));
+    } else {
+      setCourseModules([]);
+    }
+  }, [newQuestionData.courseId]);
+
+  useEffect(() => {
+    const fetchCoursesAndQuizzes = async () => {
+      try {
+        const [coursesRes, quizzesRes] = await Promise.all([
+          api.get('/courses/all'),
+          api.get('/quizzes')
+        ]);
+        const myCoursesData = coursesRes.data;
+        const allQuizzesData = quizzesRes.data;
+
+        setMyCourses(myCoursesData);
+
+        // Filter quizzes to only include those belonging to the instructor's courses
+        const myCourseIds = new Set(myCoursesData.map((c: any) => c.id));
+        const myQuizzes = allQuizzesData.filter((q: any) => myCourseIds.has(q.courseId));
+
+        setQuizzes(myQuizzes);
+      } catch (err) {
+        console.error('Failed to fetch data', err);
+      }
+    };
+    fetchCoursesAndQuizzes();
+  }, []);
+
+  const allQuestions = quizzes.flatMap(q =>
+    (q.questions || []).map((question: any) => ({
       ...question,
-      quizId: q.id,
+      quizId: q._id || q.id,
       courseId: q.courseId,
     }))
   );
 
+  const availableModules = Array.from(new Set(
+    allQuestions
+      .filter(q => selectedCourse === 'all' || q.courseId === selectedCourse)
+      .map(q => q.skillMapped)
+      .filter(Boolean)
+  )).sort();
+
   const filteredQuestions = allQuestions.filter(q => {
     const matchesSearch = q.question.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse = selectedCourse === 'all' || q.courseId === selectedCourse;
+    const matchesModule = selectedModule === 'all' || q.skillMapped === selectedModule;
     const matchesDifficulty = difficultyFilter === 'all' || q.difficulty === difficultyFilter;
-    return matchesSearch && matchesCourse && matchesDifficulty;
+    return matchesSearch && matchesCourse && matchesModule && matchesDifficulty;
   });
 
   const getDifficultyColor = (difficulty: string) => {
@@ -50,6 +118,107 @@ export function QuestionBankPage() {
         return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300';
       default:
         return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const openEditModal = (question: any) => {
+    setNewQuestionData({
+      courseId: question.courseId || '',
+      difficulty: question.difficulty || 'medium',
+      question: question.question || '',
+      options: question.options || ['', '', '', ''],
+      correctAnswer: question.correctAnswer || 0,
+      skillMapped: question.skillMapped || '',
+      explanation: question.explanation || ''
+    });
+    setEditingQuestionId(question._id || question.id);
+    setEditingQuizId(question.quizId);
+    setShowAddModal(true);
+  };
+
+  const handleDeleteQuestion = async (quizId: string, questionId: string) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+    try {
+      const quiz = quizzes.find(q => (q._id || q.id) === quizId);
+      if (!quiz) return;
+
+      const newQuestions = quiz.questions.filter((q: any) => (q._id || q.id) !== questionId && q.id !== questionId);
+
+      await api.patch(`/quizzes/${quizId}`, { questions: newQuestions });
+
+      setQuizzes(prev => prev.map(q => (q._id || q.id) === quizId ? { ...q, questions: newQuestions } : q));
+      toast.success('Question deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete question');
+      console.error(error);
+    }
+  };
+
+  const handleSubmitQuestion = async () => {
+    if (!newQuestionData.question || newQuestionData.options.some(o => !o)) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingQuestionId && editingQuizId) {
+        const quiz = quizzes.find(q => (q._id || q.id) === editingQuizId);
+        if (!quiz) throw new Error('Quiz not found');
+
+        const newQuestions = quiz.questions.map((q: any) =>
+          ((q._id || q.id) === editingQuestionId || q.id === editingQuestionId) ? { ...q, ...newQuestionData } : q
+        );
+
+        await api.patch(`/quizzes/${editingQuizId}`, { questions: newQuestions });
+
+        setQuizzes(prev => prev.map(q => (q._id || q.id) === editingQuizId ? { ...q, questions: newQuestions } : q));
+        toast.success('Question updated successfully');
+      } else {
+        if (!newQuestionData.courseId || !newQuestionData.skillMapped) {
+          toast.error('Please select both Course and Course Module');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const targetModule = courseModules.find(m => m.name === newQuestionData.skillMapped);
+        if (!targetModule || !targetModule.lessonId) {
+          toast.error('Failed to resolve lesson for this module. Make sure the module has at least one lesson.');
+          setIsSubmitting(false);
+          return;
+        }
+
+        const quizRes = await api.get(`/quizzes?lessonId=${targetModule.lessonId}`);
+        let currentQuiz = quizRes.data.length > 0 ? quizRes.data[0] : null;
+
+        if (!currentQuiz) {
+          const newQuizData = {
+            courseId: newQuestionData.courseId,
+            lessonId: targetModule.lessonId,
+            title: `${newQuestionData.skillMapped} Quiz`,
+            questions: [newQuestionData]
+          };
+          const { data } = await api.post('/quizzes', newQuizData);
+          setQuizzes(prev => [...prev, data]);
+          toast.success('Question added successfully to a new quiz');
+        } else {
+          const newQuestions = [...(currentQuiz.questions || []), newQuestionData];
+          const { data } = await api.patch(`/quizzes/${currentQuiz._id || currentQuiz.id}`, { questions: newQuestions });
+          setQuizzes(prev => prev.map(q => (q._id || q.id) === (currentQuiz._id || currentQuiz.id) ? data : q));
+          toast.success('Question added to existing quiz');
+        }
+      }
+      setShowAddModal(false);
+      setEditingQuestionId(null);
+      setEditingQuizId(null);
+      setNewQuestionData({
+        courseId: '', difficulty: 'medium', question: '', options: ['', '', '', ''], correctAnswer: 0, skillMapped: '', explanation: ''
+      });
+    } catch (error) {
+      toast.error('Failed to save question');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -91,14 +260,26 @@ export function QuestionBankPage() {
             className="pl-10"
           />
         </div>
-        <Select value={selectedCourse} onValueChange={setSelectedCourse}>
-          <SelectTrigger className="w-[200px]">
+        <Select value={selectedCourse} onValueChange={(val) => { setSelectedCourse(val); setSelectedModule('all'); }}>
+          <SelectTrigger className="w-[180px] sm:w-[220px] [&>span]:truncate">
             <SelectValue placeholder="All Courses" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Courses</SelectItem>
-            {mockCourses.map(course => (
-              <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+            {myCourses.map(course => (
+              <SelectItem key={course._id || course.id} value={course._id || course.id}>{course.title}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={selectedModule} onValueChange={setSelectedModule}>
+          <SelectTrigger className="w-[180px] sm:w-[240px] [&>span]:truncate">
+            <BookOpen className="h-4 w-4 shrink-0 mr-2" />
+            <SelectValue placeholder="All Modules" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Modules</SelectItem>
+            {availableModules.map(mod => (
+              <SelectItem key={mod as string} value={mod as string}>{mod as string}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -133,7 +314,7 @@ export function QuestionBankPage() {
             <div className="space-y-4">
               {filteredQuestions.map((question, index) => (
                 <motion.div
-                  key={question.id}
+                  key={question._id || question.id || index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -149,14 +330,13 @@ export function QuestionBankPage() {
                       </div>
                       <p className="font-medium mb-3">{question.question}</p>
                       <div className="grid sm:grid-cols-2 gap-2">
-                        {question.options.map((option, optIndex) => (
+                        {(question.options || []).map((option: string, optIndex: number) => (
                           <div
                             key={optIndex}
-                            className={`flex items-center gap-2 p-2 rounded text-sm ${
-                              optIndex === question.correctAnswer
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
-                                : 'bg-muted'
-                            }`}
+                            className={`flex items-center gap-2 p-2 rounded text-sm ${optIndex === question.correctAnswer
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                              : 'bg-muted'
+                              }`}
                           >
                             {optIndex === question.correctAnswer ? (
                               <CheckCircle2 className="h-4 w-4" />
@@ -169,10 +349,10 @@ export function QuestionBankPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" onClick={() => openEditModal(question)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="text-red-500">
+                      <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDeleteQuestion(question.quizId, question._id || question.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -193,12 +373,21 @@ export function QuestionBankPage() {
       </motion.div>
 
       {/* Add Question Modal */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+      <Dialog open={showAddModal} onOpenChange={(open) => {
+        setShowAddModal(open);
+        if (!open) {
+          setEditingQuestionId(null);
+          setEditingQuizId(null);
+          setNewQuestionData({
+            courseId: '', difficulty: 'medium', question: '', options: ['', '', '', ''], correctAnswer: 0, skillMapped: '', explanation: ''
+          });
+        }
+      }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add New Question</DialogTitle>
+            <DialogTitle>{editingQuestionId ? 'Edit Question' : 'Add New Question'}</DialogTitle>
             <DialogDescription>
-              Create a new quiz question
+              {editingQuestionId ? 'Update your existing question' : 'Create a new quiz question'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
@@ -208,25 +397,27 @@ export function QuestionBankPage() {
                 className="w-full p-3 rounded-lg border resize-none"
                 rows={3}
                 placeholder="Enter your question"
+                value={newQuestionData.question}
+                onChange={(e) => setNewQuestionData(prev => ({ ...prev, question: e.target.value }))}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm font-medium">Course *</label>
-                <Select>
-                  <SelectTrigger>
+                <Select value={newQuestionData.courseId} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, courseId: v }))}>
+                  <SelectTrigger className="w-full [&>span]:truncate">
                     <SelectValue placeholder="Select course" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCourses.map(course => (
-                      <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                    {myCourses.map(course => (
+                      <SelectItem key={course._id || course.id} value={course._id || course.id}>{course.title}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Difficulty *</label>
-                <Select>
+                <Select value={newQuestionData.difficulty} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, difficulty: v }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
@@ -238,21 +429,40 @@ export function QuestionBankPage() {
                 </Select>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Skill Mapped</label>
-              <Input placeholder="e.g., Machine Learning, React" />
+            <div className="space-y-2 min-w-0">
+              <label className="text-sm font-medium">Course Module *</label>
+              <Select value={newQuestionData.skillMapped} onValueChange={(v) => setNewQuestionData(prev => ({ ...prev, skillMapped: v }))} disabled={!newQuestionData.courseId}>
+                <SelectTrigger className="w-full [&>span]:truncate">
+                  <SelectValue placeholder={newQuestionData.courseId ? "Select module" : "Select a course first"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {courseModules.map(mod => (
+                    <SelectItem key={mod.name} value={mod.name}>{mod.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Options *</label>
               <div className="space-y-2">
-                {[1, 2, 3, 4].map((num) => (
+                {[0, 1, 2, 3].map((num) => (
                   <div key={num} className="flex items-center gap-2">
                     <input
                       type="radio"
                       name="correct"
                       className="w-4 h-4"
+                      checked={newQuestionData.correctAnswer === num}
+                      onChange={() => setNewQuestionData(prev => ({ ...prev, correctAnswer: num }))}
                     />
-                    <Input placeholder={`Option ${num}`} />
+                    <Input
+                      placeholder={`Option ${num + 1}`}
+                      value={newQuestionData.options[num]}
+                      onChange={(e) => {
+                        const newOpts = [...newQuestionData.options];
+                        newOpts[num] = e.target.value;
+                        setNewQuestionData(prev => ({ ...prev, options: newOpts }));
+                      }}
+                    />
                   </div>
                 ))}
               </div>
@@ -266,15 +476,17 @@ export function QuestionBankPage() {
                 className="w-full p-3 rounded-lg border resize-none"
                 rows={2}
                 placeholder="Explain why the correct answer is right"
+                value={newQuestionData.explanation}
+                onChange={(e) => setNewQuestionData(prev => ({ ...prev, explanation: e.target.value }))}
               />
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowAddModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => setShowAddModal(false)}>
+              <Button onClick={handleSubmitQuestion} disabled={isSubmitting}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
-                Add Question
+                {editingQuestionId ? 'Save Changes' : 'Add Question'}
               </Button>
             </div>
           </div>

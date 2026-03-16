@@ -10,6 +10,7 @@ const lessonSchema = new mongoose.Schema({
     courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true },
     title: { type: String, required: true },
     description: { type: String, default: '' },
+    module: { type: String, default: '' },
     videoUrl: { type: String, default: '' },
     duration: { type: Number, default: 0 }, // minutes
     order: { type: Number, required: true },

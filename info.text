@@ -1,0 +1,44 @@
+# Autonomous Learning Management Ecosystem
+
+## Project Overview
+A comprehensive, modern Learning Management System (LMS) designed to facilitate seamless education for learners, provide powerful course creation tools for instructors, and offer robust management capabilities for administrators. 
+
+## Technology Stack
+- **Frontend**: React 19, Next-Themes (Dark Mode), TypeScript, Vite, Tailwind CSS, Radix UI (Shadcn UI), Framer Motion, Recharts (for data visualization).
+- **Backend**: Node.js, Express.js.
+- **Database**: MongoDB & Mongoose.
+- **Utilities**: jsPDF & html2canvas (for PDF certificates), React Hook Form & Zod (for validation), Axios, and more.
+
+## Core Features & Capabilities
+
+### 1. Multi-Role Architecture
+The platform is tailored for three distinct user roles, each with a dedicated workspace and customized dashboard:
+- **Student Panel**: Access to enrolled/purchased courses, track learning progress, view overall completion ratios, and manage personal profiles (including self-bios).
+- **Instructor Panel**: Comprehensive tools to create courses, manage general course information, upload thumbnails, manage lessons/modules, use a customized enlarged video player for lesson review, and maintain an instructor profile.
+- **Admin Panel**: Platform oversight, user management features, and system-wide settings.
+
+### 2. Advanced Course Viewing & Management
+- **Course Cards**: Dynamic course cards prominently display the total course duration, dynamically calculated by summing up individual lesson durations.
+- **Course Edit Functionality**: Dedicated pages for instructors to easily edit course details without redirecting heavily through lesson structures.
+- **Custom Video Player**: An optimized, enlarged video player modal for a better viewing experience on both instructor and student panels.
+
+### 3. Assessments & Exams
+- **Module Exam System**: Integrated module exams to test student knowledge.
+- **Status Indicators**: Visual cues (e.g., yellow highlights) in the course content sidebar to inform students about the active status of module exams (pending, not attempted, or failed).
+
+### 4. Progress Tracking
+- **Dashboard Completion Ratio**: A highly visual student dashboard that replaces basic metrics with an "Overall Completion Ratio," showing the average completion percentage across all purchased courses.
+
+### 5. AI Chatbot Integration
+- **Smart Assistant**: A fully functional AI chatbot seamlessly accessible via a floating button across all pages.
+- **Context-Aware**: Connected to the `POST /api/ai/chat` backend and queried against MongoDB, answering student questions regarding courses, navigation, and support.
+- **Modern UI**: Chat interface features message persistence, markdown support, and full dark-mode compatibility. 
+
+### 6. Certificate Generation
+- **Automated PDF Certificates**: Upon course completion, the system generates downloadable certificates using `jsPDF` and `html2canvas`.
+- **Customized Layouts**: Carefully refined certificate alignments featuring institute logos, student names with underlines, and signature sections positioned correctly at the bottom-right corner.
+
+### 7. Modern User Interface
+- **Premium Aesthetics**: Fully responsive layout utilizing Tailwind CSS with sleek glassmorphism and modern Radix UI primitives.
+- **Dark/Light Mode**: First-class support for theming across the application.
+- **Smooth Animations**: Animated interfaces driven by `framer-motion` and `tailwindcss-animate` for an engaging user experience.

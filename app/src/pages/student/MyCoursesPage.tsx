@@ -1,25 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CourseCard } from '@/components/common/CourseCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { mockCourses, mockCourseProgress } from '@/mock/data';
-import { Search, Grid3X3, List, Filter } from 'lucide-react';
+import { Search, Grid3X3, List } from 'lucide-react';
+import api from '@/lib/api';
+import { toast } from 'sonner';
+import type { Course } from '@/types';
+import { useAuth } from '@/context';
+import { CertificateModal } from '@/components/common/CertificateModal';
 
 export function MyCoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeTab, setActiveTab] = useState('all');
+  const { user } = useAuth();
+  const [selectedCertificateCourse, setSelectedCertificateCourse] = useState<Course | null>(null);
 
-  const enrolledCourseIds = ['c1', 'c2', 'c3'];
-  const enrolledCourses = mockCourses.filter(c => enrolledCourseIds.includes(c.id));
-  const completedCourses = enrolledCourses.slice(0, 0); // None completed yet
-  const inProgressCourses = enrolledCourses;
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  const filterCourses = (courses: typeof enrolledCourses) => {
+  useEffect(() => {
+    fetchEnrolledCourses();
+  }, []);
+
+  const fetchEnrolledCourses = async () => {
+    try {
+      setLoading(true);
+      const [coursesRes, progressRes] = await Promise.all([
+        api.get('/courses/enrolled/my'),
+        api.get('/progress')
+      ]);
+
+      const progressMap: Record<string, number> = {};
+      progressRes.data.forEach((p: any) => {
+        progressMap[p.courseId] = p.completionPercentage || 0;
+      });
+
+      const coursesWithProgress = coursesRes.data.map((course: any) => ({
+        ...course,
+        progress: Math.round(progressMap[course._id || course.id] || 0)
+      }));
+
+      setEnrolledCourses(coursesWithProgress);
+    } catch (error) {
+      toast.error('Failed to load your courses');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completedCourses = enrolledCourses.filter(c => (c as any).progress >= 100);
+  const inProgressCourses = enrolledCourses.filter(c => (c as any).progress < 100);
+
+  const filterCourses = (courses: Course[]) => {
     return courses.filter(course =>
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.category.toLowerCase().includes(searchQuery.toLowerCase())
@@ -38,6 +76,24 @@ export function MyCoursesPage() {
   };
 
   const displayedCourses = getCoursesForTab();
+
+  const handleContinue = async (courseId: string) => {
+    try {
+      const [{ data: lessons }, { data: progressData }] = await Promise.all([
+        api.get(`/lessons?courseId=${courseId}`),
+        api.get(`/progress?courseId=${courseId}`)
+      ]);
+
+      const progress = progressData[0] || { completedLessons: [] };
+      const incompleteLesson = lessons.find((l: any) => !progress.completedLessons.includes(l.id));
+      const targetLessonId = incompleteLesson ? incompleteLesson.id : (lessons[0]?.id || 'start');
+
+      navigate(`/student/courses/${courseId}/lessons/${targetLessonId}`);
+    } catch (error) {
+      toast.error('Failed to load course progress');
+      navigate(`/courses/${courseId}`);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -73,7 +129,7 @@ export function MyCoursesPage() {
             placeholder="Search your courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-12"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -81,15 +137,17 @@ export function MyCoursesPage() {
             variant={viewMode === 'grid' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('grid')}
+            className="h-12 w-12"
           >
-            <Grid3X3 className="h-4 w-4" />
+            <Grid3X3 className="h-5 w-5" />
           </Button>
           <Button
             variant={viewMode === 'list' ? 'default' : 'outline'}
             size="icon"
             onClick={() => setViewMode('list')}
+            className="h-12 w-12"
           >
-            <List className="h-4 w-4" />
+            <List className="h-5 w-5" />
           </Button>
         </div>
       </motion.div>
@@ -101,63 +159,69 @@ export function MyCoursesPage() {
         transition={{ duration: 0.4, delay: 0.2 }}
       >
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="all">
+          <TabsList className="mb-6 h-12">
+            <TabsTrigger value="all" className="h-10 px-6">
               All Courses
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ml-2 font-normal rounded-full px-2">
                 {enrolledCourses.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="in-progress">
+            <TabsTrigger value="in-progress" className="h-10 px-6">
               In Progress
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ml-2 font-normal rounded-full px-2">
                 {inProgressCourses.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger value="completed">
+            <TabsTrigger value="completed" className="h-10 px-6">
               Completed
-              <Badge variant="secondary" className="ml-2">
+              <Badge variant="secondary" className="ml-2 font-normal rounded-full px-2">
                 {completedCourses.length}
               </Badge>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-0">
-            {displayedCourses.length > 0 ? (
+            {loading ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="h-[350px] bg-muted/40 animate-pulse rounded-2xl border border-muted-foreground/10"></div>
+                ))}
+              </div>
+            ) : displayedCourses.length > 0 ? (
               <div className={
                 viewMode === 'grid'
                   ? 'grid sm:grid-cols-2 lg:grid-cols-3 gap-6'
                   : 'space-y-4'
               }>
                 {displayedCourses.map((course, index) => {
-                  const progress = mockCourseProgress.find(p => p.courseId === course.id);
                   return (
                     <CourseCard
                       key={course.id}
                       course={course}
-                      progress={progress?.completionPercentage}
-                      showProgress
+                      progress={(course as any).progress || 0}
+                      showProgress={true}
                       showActions
                       variant={viewMode === 'list' ? 'horizontal' : 'default'}
                       delay={index * 0.1}
-                      onContinue={() => {}}
+                      onContinue={() => handleContinue(course.id)}
+                      onCertificate={() => setSelectedCertificateCourse(course)}
                     />
                   );
                 })}
               </div>
             ) : (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-8 w-8 text-muted-foreground" />
+              <div className="text-center py-20 bg-white border border-slate-200 rounded-xl shadow-sm">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                  <Search className="h-8 w-8 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No courses found</h3>
-                <p className="text-muted-foreground mb-4">
+                <h3 className="text-xl font-bold mb-2">No courses found</h3>
+                <p className="text-muted-foreground mb-6">
                   {searchQuery
                     ? 'Try adjusting your search terms'
                     : 'You haven\'t enrolled in any courses yet'}
                 </p>
                 {!searchQuery && (
-                  <Button asChild>
+                  <Button asChild size="lg">
                     <Link to="/courses">Browse Courses</Link>
                   </Button>
                 )}
@@ -166,6 +230,14 @@ export function MyCoursesPage() {
           </TabsContent>
         </Tabs>
       </motion.div>
+
+      {/* Certificate Modal */}
+      <CertificateModal
+        isOpen={!!selectedCertificateCourse}
+        onClose={() => setSelectedCertificateCourse(null)}
+        course={selectedCertificateCourse}
+        studentName={user?.name || 'Student'}
+      />
     </div>
   );
 }

@@ -54,14 +54,16 @@ export function AdminDashboard() {
   }, []);
 
   const totalUsers = users.length;
+  const activeInstructors = users.filter(u => u.role === 'instructor' && u.isActive && u.status === 'approved').length;
   const activeStudents = users.filter(u => u.role === 'student' && u.isActive).length;
   const totalCoursesCount = courses.length;
-  const coursesPublished = courses.filter(c => c.isPublished).length;
 
   const { dailyActiveUsers, trafficData } = mockPlatformAnalytics;
 
   const recentUsers = [...users].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  const pendingInstructors = users.filter(u => u.role === 'instructor' && u.status === 'pending');
   const pendingCourses = courses.filter(c => !c.isPublished);
+  const totalPending = pendingInstructors.length + pendingCourses.length;
 
   return (
     <div className="space-y-8">
@@ -96,12 +98,20 @@ export function AdminDashboard() {
           delay={0.1}
         />
         <StatCard
+          title="Active Instructors"
+          value={activeInstructors.toLocaleString()}
+          change={4}
+          trend="up"
+          icon={Users}
+          delay={0.2}
+        />
+        <StatCard
           title="Active Students"
           value={activeStudents.toLocaleString()}
           change={12}
           trend="up"
           icon={Activity}
-          delay={0.2}
+          delay={0.3}
         />
         <StatCard
           title="Total Courses"
@@ -109,12 +119,6 @@ export function AdminDashboard() {
           change={5}
           trend="up"
           icon={GraduationCap}
-          delay={0.3}
-        />
-        <StatCard
-          title="Published Courses"
-          value={coursesPublished}
-          icon={CheckCircle2}
           delay={0.4}
         />
       </div>
@@ -225,7 +229,7 @@ export function AdminDashboard() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Recent Users</CardTitle>
                 <Button variant="ghost" size="sm" asChild>
-                  <Link to="/admin/users">
+                  <Link to="/admin/students">
                     View All
                     <ArrowRight className="h-4 w-4 ml-1" />
                   </Link>
@@ -265,29 +269,77 @@ export function AdminDashboard() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">Pending Approvals</CardTitle>
-                <Badge variant="secondary">{pendingCourses.length}</Badge>
+                <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200">
+                  {totalPending}
+                </Badge>
               </div>
             </CardHeader>
             <CardContent>
-              {pendingCourses.length > 0 ? (
+              {totalPending > 0 ? (
                 <div className="space-y-4">
+                  {/* Pending Instructors */}
+                  {pendingInstructors.map((instructor) => (
+                    <div key={instructor.id} className="p-3 rounded-lg border border-primary/10 bg-primary/5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <img src={instructor.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${instructor.name}`} className="w-8 h-8 rounded-full" />
+                          <div>
+                            <p className="font-semibold text-sm">{instructor.name}</p>
+                            <p className="text-[10px] uppercase tracking-wider font-bold text-primary">New Instructor</p>
+                          </div>
+                        </div>
+                        <Shield className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <Button size="sm" variant="outline" className="flex-1 text-xs" asChild>
+                          <Link to="/admin/instructors">Review</Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1 text-xs bg-primary hover:bg-primary/90"
+                          onClick={async () => {
+                            try {
+                              await api.patch(`/users/${instructor.id}`, { status: 'approved' });
+                              window.location.reload();
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                        >
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Pending Courses */}
                   {pendingCourses.map((course) => (
-                    <div key={course.id} className="p-3 rounded-lg border">
+                    <div key={course.id} className="p-3 rounded-lg border border-amber-100 bg-amber-50/50">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="font-medium text-sm">{course.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            by {course.instructorName}
-                          </p>
+                          <p className="font-semibold text-sm">{course.title}</p>
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-amber-600">New Course Content</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">by {course.instructorName}</p>
                         </div>
                         <AlertCircle className="h-4 w-4 text-amber-500" />
                       </div>
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" variant="outline" className="flex-1">
-                          Review
+                        <Button size="sm" variant="outline" className="flex-1 text-xs" asChild>
+                          <Link to="/admin/courses">Review</Link>
                         </Button>
-                        <Button size="sm" className="flex-1">
-                          Approve
+                        <Button
+                          size="sm"
+                          className="flex-1 text-xs bg-amber-600 hover:bg-amber-700 text-white"
+                          onClick={async () => {
+                            try {
+                              await api.patch(`/courses/${course.id}`, { isPublished: true });
+                              window.location.reload();
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }}
+                        >
+                          Publish
                         </Button>
                       </div>
                     </div>

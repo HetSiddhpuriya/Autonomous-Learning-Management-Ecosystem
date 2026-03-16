@@ -11,7 +11,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown } from 'lucide-react';
+import { Bell, Moon, Sun, User, LogOut, Settings, ChevronDown, Check, Info, AlertTriangle, XCircle, Zap, Heart } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import api from '@/lib/api';
 
 interface NavbarProps {
   showSidebarToggle?: boolean;
@@ -20,8 +23,56 @@ interface NavbarProps {
 
 export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
   const { user, logout, isAuthenticated } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isOfflineMode } = useTheme();
   const navigate = useNavigate();
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      // Optional: Polling every 30 seconds for real-time feel
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.get('/notifications');
+      setNotifications(data);
+      setUnreadCount(data.filter((n: any) => !n.isRead).length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (unreadCount === 0) return;
+    try {
+      await api.patch('/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark read:', error);
+    }
+  };
+
+  const handleNotificationClick = async (notif: any) => {
+    if (!notif.isRead) {
+      try {
+        await api.patch(`/notifications/${notif.id || notif._id}/read`);
+        setNotifications(prev => prev.map(n =>
+          (n.id || n._id) === (notif.id || notif._id) ? { ...n, isRead: true } : n
+        ));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch (error) { }
+    }
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -46,7 +97,7 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 flex h-16 items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-4">
+        <div className="flex-1 flex items-center gap-4">
           {showSidebarToggle && (
             <Button
               variant="ghost"
@@ -71,38 +122,39 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
               </svg>
             </Button>
           )}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">L</span>
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary via-primary/80 to-blue-400 flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform duration-200">
+              <Zap className="text-primary-foreground w-6 h-6 fill-primary-foreground/20" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              LearnFlux
-            </span>
+            <div className="flex flex-col">
+              <span className="text-xl font-black tracking-tight bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent leading-none">
+                LearnFlux
+              </span>
+              <span className="text-[10px] font-bold text-muted-foreground tracking-[0.2em] uppercase mt-0.5 pl-0.5">
+                Ecosystem
+              </span>
+            </div>
           </Link>
         </div>
 
         {/* Navigation */}
         <nav className="hidden md:flex items-center gap-6">
-          {!isAuthenticated && (
-            <>
-              <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Home
-              </Link>
-              <Link to="/#features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Features
-              </Link>
-              <Link to="/#courses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Courses
-              </Link>
-              <Link to="/#testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-                Testimonials
-              </Link>
-            </>
-          )}
+          <Link to="/" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
+          <Link to="/courses" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Courses
+          </Link>
+          <Link to="/features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Features
+          </Link>
+          <Link to="/testimonials" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+            Testimonials
+          </Link>
         </nav>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex-1 flex items-center justify-end gap-3">
           {/* Theme Toggle */}
           <Button
             variant="ghost"
@@ -120,44 +172,54 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
           {isAuthenticated ? (
             <>
               {/* Notifications */}
-              <DropdownMenu>
+              <DropdownMenu onOpenChange={(open) => { if (!open) fetchNotifications() }}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative rounded-full">
                     <Bell className="h-5 w-5" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                    {unreadCount > 0 && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <div className="flex items-center justify-between px-4 py-2 border-b">
                     <span className="font-semibold text-sm">Notifications</span>
-                    <Badge variant="secondary" className="text-xs">3 new</Badge>
+                    {unreadCount > 0 && (
+                      <Badge variant="secondary" className="text-xs">{unreadCount} new</Badge>
+                    )}
                   </div>
                   <div className="max-h-80 overflow-y-auto">
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-4 cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                        <span className="font-medium text-sm">New user signed up</span>
+                    {notifications.length > 0 ? notifications.map((notif: any) => (
+                      <DropdownMenuItem
+                        key={notif.id || notif._id}
+                        className={`flex flex-col items-start gap-1 p-4 cursor-pointer ${!notif.isRead ? 'bg-primary/5' : ''}`}
+                        onClick={() => handleNotificationClick(notif)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {notif.type === 'success' && <div className="w-2 h-2 bg-green-500 rounded-full" />}
+                          {notif.type === 'warning' && <div className="w-2 h-2 bg-amber-500 rounded-full" />}
+                          {notif.type === 'error' && <div className="w-2 h-2 bg-red-500 rounded-full" />}
+                          {notif.type === 'info' && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+                          {!['success', 'warning', 'error', 'info'].includes(notif.type) && <div className="w-2 h-2 bg-blue-500 rounded-full" />}
+                          <span className={`text-sm ${!notif.isRead ? 'font-bold' : 'font-medium'}`}>{notif.title}</span>
+                        </div>
+                        <span className="text-xs text-muted-foreground ml-4 line-clamp-2">{notif.message}</span>
+                        <span className="text-[10px] text-muted-foreground ml-4 mt-1">
+                          {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
+                        </span>
+                      </DropdownMenuItem>
+                    )) : (
+                      <div className="text-center py-6 text-sm text-muted-foreground">
+                        No notifications
                       </div>
-                      <span className="text-xs text-muted-foreground ml-4">2 minutes ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-4 cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        <span className="font-medium text-sm">System update completed</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground ml-4">1 hour ago</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-4 cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full" />
-                        <span className="font-medium text-sm">High server load detected</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground ml-4">3 hours ago</span>
-                    </DropdownMenuItem>
+                    )}
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="w-full text-center text-sm font-medium text-primary cursor-pointer justify-center py-3">
-                    View all notifications
+                  <DropdownMenuItem
+                    className="w-full text-center text-sm font-medium text-primary cursor-pointer justify-center py-3"
+                    onClick={markAllAsRead}
+                  >
+                    Mark all as read
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -166,11 +228,17 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="flex items-center gap-2 px-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar} alt={user?.name} />
-                      <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="hidden sm:inline text-sm font-medium">{user?.name}</span>
+                    <div className="relative">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatar} alt={user?.name} />
+                        <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-[1.5px] border-background rounded-full ${isOfflineMode ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                    </div>
+                    <div className="hidden sm:flex flex-col items-start ml-1">
+                      <span className="text-sm font-bold leading-tight">{user?.name}</span>
+                      <span className="text-[10px] font-bold text-primary uppercase leading-tight">{user?.role}</span>
+                    </div>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -190,7 +258,13 @@ export function Navbar({ showSidebarToggle, onSidebarToggle }: NavbarProps) {
                     <User className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  {user?.role === 'student' && (
+                    <DropdownMenuItem onClick={() => navigate('/student/wishlist')}>
+                      <Heart className="mr-2 h-4 w-4" />
+                      Wishlist
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => navigate(user ? `/${user.role}/settings` : '/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>

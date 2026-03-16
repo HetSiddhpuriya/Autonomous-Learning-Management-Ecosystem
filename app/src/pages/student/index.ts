@@ -6,3 +6,4 @@ export { DiscussionsPage } from './DiscussionsPage';
 export { SettingsPage } from './SettingsPage';
 export { LessonPage } from './LessonPage';
 export { QuizPage } from './QuizPage';
+export { TransactionsPage } from './TransactionsPage';

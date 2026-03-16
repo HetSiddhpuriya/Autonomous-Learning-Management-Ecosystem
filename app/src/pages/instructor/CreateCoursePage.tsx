@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import api from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +21,6 @@ import {
   ArrowLeft,
   Plus,
   X,
-  Upload,
   CheckCircle2,
   Loader2,
   Image as ImageIcon,
@@ -27,17 +28,52 @@ import {
 
 export function CreateCoursePage() {
   const navigate = useNavigate();
+  const { courseId } = useParams();
+  const isEditing = !!courseId;
+
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [courseData, setCourseData] = useState({
     title: '',
     description: '',
     category: '',
+    customCategory: '',
     difficulty: '',
     skillTags: [] as string[],
     newTag: '',
-    thumbnail: null as File | null,
+    thumbnail: '',
+    imageUrl: '',
+    price: '',
+    duration: '',
+    durationUnit: 'minutes',
   });
+
+  useEffect(() => {
+    if (isEditing) {
+      const fetchCourse = async () => {
+        try {
+          const { data } = await api.get(`/courses/${courseId}`);
+          setCourseData({
+            title: data.title || '',
+            description: data.description || '',
+            category: data.category || '',
+            customCategory: '',
+            difficulty: data.difficulty || '',
+            skillTags: data.skillTags || [],
+            newTag: '',
+            thumbnail: data.thumbnail || '',
+            imageUrl: '',
+            price: data.price ? data.price.toString() : '0',
+            duration: data.duration ? data.duration.toString() : '',
+            durationUnit: 'minutes',
+          });
+        } catch (err) {
+          toast.error('Failed to load course details');
+        }
+      };
+      fetchCourse();
+    }
+  }, [isEditing, courseId]);
 
   const categories = [
     'Data Science',
@@ -72,12 +108,57 @@ export function CreateCoursePage() {
     }));
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('File size must be less than 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCourseData(prev => ({ ...prev, thumbnail: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSubmitting(false);
-    navigate('/instructor/lessons');
+    try {
+      let calculatedDuration = Number(courseData.duration) || 0;
+      if (courseData.durationUnit === 'hours') calculatedDuration *= 60;
+      else if (courseData.durationUnit === 'months') calculatedDuration *= 30 * 24 * 60; // 30 days scale
+
+      const payload: any = {
+        title: courseData.title,
+        description: courseData.description,
+        category: courseData.category === 'other' ? courseData.customCategory : courseData.category,
+        difficulty: courseData.difficulty,
+        skillTags: courseData.skillTags, // Fix: Changed tags to skillTags as defined in model/schema
+        thumbnail: courseData.thumbnail || courseData.imageUrl,
+        price: Number(courseData.price) || 0,
+        duration: calculatedDuration,
+      };
+
+      if (!isEditing) {
+        payload.isPublished = false;
+      }
+
+      if (isEditing) {
+        await api.patch(`/courses/${courseId}`, payload);
+        toast.success('Course updated successfully!');
+      } else {
+        await api.post('/courses', payload);
+        toast.success('Course submitted to admin for review!');
+      }
+      navigate('/instructor/lessons');
+    } catch (error) {
+      toast.error(isEditing ? 'Failed to update course' : 'Failed to create course');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canProceed = () => {
@@ -85,9 +166,10 @@ export function CreateCoursePage() {
       case 1:
         return courseData.title.trim() && courseData.description.trim();
       case 2:
-        return courseData.category && courseData.difficulty;
+        const hasValidCategory = courseData.category === 'other' ? courseData.customCategory.trim() !== '' : courseData.category !== '';
+        return hasValidCategory && courseData.difficulty !== '';
       case 3:
-        return courseData.skillTags.length > 0;
+        return courseData.skillTags.length > 0 && courseData.price.trim() !== '' && courseData.duration.trim() !== '';
       default:
         return true;
     }
@@ -130,48 +212,95 @@ export function CreateCoursePage() {
       case 2:
         return (
           <div className="space-y-6">
-            <div className="space-y-2">
-              <Label>Category *</Label>
-              <Select
-                value={courseData.category}
-                onValueChange={(value) => setCourseData(prev => ({ ...prev, category: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map(cat => (
-                    <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Category & Difficulty side by side */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Category *</Label>
+                <Select
+                  value={courseData.category}
+                  onValueChange={(value) => setCourseData(prev => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
+                    ))}
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Difficulty Level *</Label>
+                <Select
+                  value={courseData.difficulty}
+                  onValueChange={(value) => setCourseData(prev => ({ ...prev, difficulty: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {difficulties.map(diff => (
+                      <SelectItem key={diff.value} value={diff.value}>{diff.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
+            {courseData.category === 'other' && (
+              <div className="space-y-2">
+                <Label htmlFor="customCategory">Custom Category Name *</Label>
+                <Input
+                  id="customCategory"
+                  placeholder="e.g., Personal Development"
+                  value={courseData.customCategory}
+                  onChange={(e) => setCourseData(prev => ({ ...prev, customCategory: e.target.value }))}
+                />
+              </div>
+            )}
+
+            {/* Image URL field */}
             <div className="space-y-2">
-              <Label>Difficulty Level *</Label>
-              <Select
-                value={courseData.difficulty}
-                onValueChange={(value) => setCourseData(prev => ({ ...prev, difficulty: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select difficulty" />
-                </SelectTrigger>
-                <SelectContent>
-                  {difficulties.map(diff => (
-                    <SelectItem key={diff.value} value={diff.value}>{diff.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                type="url"
+                placeholder="https://example.com/course-image.jpg"
+                value={courseData.imageUrl}
+                onChange={(e) => setCourseData(prev => ({ ...prev, imageUrl: e.target.value }))}
+              />
+              <p className="text-sm text-muted-foreground">
+                Paste a direct URL to use as the course thumbnail image
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label>Course Thumbnail</Label>
-              <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-muted/50 transition-colors cursor-pointer">
-                <ImageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG or GIF (max. 2MB)
-                </p>
+              <input
+                type="file"
+                id="thumbnail-upload"
+                className="hidden"
+                accept="image/jpeg, image/png, image/gif"
+                onChange={handlePhotoChange}
+              />
+              <div
+                className="border-2 border-dashed rounded-lg overflow-hidden text-center hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => document.getElementById('thumbnail-upload')?.click()}
+              >
+                {courseData.thumbnail ? (
+                  <img src={courseData.thumbnail} alt="Thumbnail preview" className="w-full h-48 object-cover" />
+                ) : (
+                  <div className="p-8">
+                    <ImageIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
+                    <p className="text-xs text-muted-foreground">
+                      PNG, JPG or GIF (max. 2MB)
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -217,45 +346,187 @@ export function CreateCoursePage() {
                 Add {3 - courseData.skillTags.length} more tag(s)
               </p>
             )}
+
+            <div className="pt-4 mt-2 border-t space-y-2">
+              <Label htmlFor="price">Course Price (₹) *</Label>
+              <Input
+                id="price"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00 (Leave 0 for free)"
+                value={courseData.price}
+                onChange={(e) => setCourseData(prev => ({ ...prev, price: e.target.value }))}
+              />
+              <p className="text-sm text-muted-foreground">
+                Set to 0 if the course is free
+              </p>
+            </div>
+
+            <div className="pt-4 mt-2 border-t space-y-2">
+              <Label htmlFor="duration">Course Duration *</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  placeholder="e.g., 120"
+                  value={courseData.duration}
+                  onChange={(e) => setCourseData(prev => ({ ...prev, duration: e.target.value }))}
+                  className="flex-1"
+                />
+                <Select
+                  value={courseData.durationUnit}
+                  onValueChange={(value) => setCourseData(prev => ({ ...prev, durationUnit: value }))}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="minutes">Minutes</SelectItem>
+                    <SelectItem value="hours">Hours</SelectItem>
+                    <SelectItem value="months">Months</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Estimated total time for completion
+              </p>
+            </div>
           </div>
         );
 
-      case 4:
+      case 4: {
+        const previewImage = courseData.thumbnail || courseData.imageUrl;
+        const displayCategory =
+          courseData.category === 'other'
+            ? courseData.customCategory
+            : courseData.category;
+        const difficultyColors: Record<string, string> = {
+          beginner: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+          intermediate: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+          advanced: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+        };
+        const diffColor = difficultyColors[courseData.difficulty] ?? 'bg-muted text-muted-foreground';
+
         return (
           <div className="space-y-6">
-            <div className="bg-muted rounded-lg p-6">
-              <h3 className="font-semibold mb-4">Course Summary</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Title</span>
-                  <span className="font-medium">{courseData.title}</span>
+            {/* ── Course Card Preview ── */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Course Preview
+              </p>
+              <div className="rounded-xl border shadow-sm overflow-hidden bg-card">
+                {/* Thumbnail */}
+                <div className="relative w-full h-44 bg-muted flex items-center justify-center overflow-hidden">
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt="Course thumbnail"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                      <ImageIcon className="h-10 w-10" />
+                      <span className="text-xs">No image provided</span>
+                    </div>
+                  )}
+                  {/* Price badge */}
+                  <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold bg-white/90 dark:bg-black/70 text-foreground shadow">
+                    {Number(courseData.price) === 0 ? 'Free' : `₹${Number(courseData.price).toLocaleString('en-IN')}`}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Category</span>
-                  <span className="font-medium capitalize">{courseData.category}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Difficulty</span>
-                  <span className="font-medium capitalize">{courseData.difficulty}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Skills</span>
-                  <span className="font-medium">{courseData.skillTags.length} tags</span>
+
+                {/* Card body */}
+                <div className="p-4 space-y-3">
+                  {/* Category + Difficulty */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {displayCategory && (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-primary/10 text-primary capitalize">
+                        {displayCategory}
+                      </span>
+                    )}
+                    {courseData.difficulty && (
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${diffColor}`}>
+                        {courseData.difficulty}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-bold text-base leading-snug line-clamp-2">
+                    {courseData.title || <span className="text-muted-foreground italic">Untitled Course</span>}
+                  </h3>
+
+                  {/* Description excerpt */}
+                  {courseData.description && (
+                    <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                      {courseData.description}
+                    </p>
+                  )}
+
+                  {/* Skills */}
+                  {courseData.skillTags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {courseData.skillTags.slice(0, 5).map(tag => (
+                        <span
+                          key={tag}
+                          className="px-2 py-0.5 rounded border text-[11px] font-medium bg-muted text-muted-foreground"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {courseData.skillTags.length > 5 && (
+                        <span className="px-2 py-0.5 rounded border text-[11px] font-medium bg-muted text-muted-foreground">
+                          +{courseData.skillTags.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Duration */}
+                  {courseData.duration && (
+                    <p className="text-xs text-muted-foreground">
+                      ⏱ {courseData.duration} {courseData.durationUnit}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* ── Summary table ── */}
+            <div className="bg-muted rounded-lg p-5">
+              <h3 className="font-semibold mb-4">Course Summary</h3>
+              <div className="space-y-3 text-sm">
+                {[
+                  ['Title', courseData.title],
+                  ['Category', displayCategory],
+                  ['Price', Number(courseData.price) === 0 ? 'Free' : `₹${Number(courseData.price).toLocaleString('en-IN')}`],
+                  ['Duration', `${courseData.duration} ${courseData.durationUnit}`],
+                  ['Difficulty', courseData.difficulty],
+                  ['Skills', `${courseData.skillTags.length} tags`],
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium capitalize">{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Ready to submit notice ── */}
             <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5" />
+              <CheckCircle2 className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
               <div>
-                <p className="font-medium text-blue-900 dark:text-blue-100">Ready to Publish?</p>
+                <p className="font-medium text-blue-900 dark:text-blue-100">Ready to Submit?</p>
                 <p className="text-sm text-blue-800 dark:text-blue-200">
-                  After publishing, you can start adding lessons and content to your course.
+                  After you submit, an admin will review your course. You can still add lessons while it's pending.
                 </p>
               </div>
             </div>
           </div>
         );
+      }
 
       default:
         return null;
@@ -274,9 +545,9 @@ export function CreateCoursePage() {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Dashboard
         </Button>
-        <h1 className="text-3xl font-bold">Create New Course</h1>
+        <h1 className="text-3xl font-bold">{isEditing ? 'Edit Course' : 'Create New Course'}</h1>
         <p className="text-muted-foreground mt-1">
-          Share your knowledge with learners worldwide
+          {isEditing ? 'Update your course details' : 'Share your knowledge with learners worldwide'}
         </p>
       </motion.div>
 
@@ -305,13 +576,13 @@ export function CreateCoursePage() {
               {step === 1 && 'Basic Information'}
               {step === 2 && 'Category & Level'}
               {step === 3 && 'Skills & Tags'}
-              {step === 4 && 'Review & Publish'}
+              {step === 4 && 'Review & Submit'}
             </CardTitle>
             <CardDescription>
               {step === 1 && 'Start with the fundamentals of your course'}
               {step === 2 && 'Categorize your course for better discovery'}
               {step === 3 && 'Help students understand what they will learn'}
-              {step === 4 && 'Review your course details before publishing'}
+              {step === 4 && 'Review your course details before submitting'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -340,12 +611,12 @@ export function CreateCoursePage() {
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Publishing...
+                      {isEditing ? 'Updating...' : 'Submitting...'}
                     </>
                   ) : (
                     <>
                       <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Publish Course
+                      {isEditing ? 'Update Course' : 'Submit for Review'}
                     </>
                   )}
                 </Button>

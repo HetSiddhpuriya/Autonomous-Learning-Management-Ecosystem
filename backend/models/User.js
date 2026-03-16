@@ -3,17 +3,31 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 6 },
+    password: { type: String, minlength: 6 },
+    googleId: { type: String, default: '' },
     name: { type: String, required: true, trim: true },
     role: { type: String, enum: ['student', 'instructor', 'admin'], default: 'student' },
     avatar: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    gender: { type: String, default: '' },
+    bio: { type: String, default: '' },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'approved' },
+    highestQualification: { type: String, default: '' },
+    fieldOfStudy: { type: String, default: '' },
+    languages: { type: String, default: '' },
+    yearsOfExperience: { type: Number, default: 0 },
+    currentJobTitle: { type: String, default: '' },
+    organization: { type: String, default: '' },
+    registrationComplete: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    isOnline: { type: Boolean, default: false },
     lastActive: { type: Date, default: Date.now },
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }]
 }, { timestamps: true });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+    if (!this.isModified('password') || !this.password) return next();
     this.password = await bcrypt.hash(this.password, 12);
     next();
 });

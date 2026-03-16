@@ -7,9 +7,20 @@ export interface User {
   name: string;
   role: UserRole;
   avatar?: string;
+  bio?: string;
   createdAt: string;
   lastActive: string;
   isActive: boolean;
+  isOnline: boolean;
+  status: 'pending' | 'approved' | 'rejected';
+  highestQualification?: string;
+  fieldOfStudy?: string;
+  yearsOfExperience?: number;
+  currentJobTitle?: string;
+  organization?: string;
+  languages?: string;
+  registrationComplete?: boolean;
+  wishlist?: string[];
 }
 
 // Course Types

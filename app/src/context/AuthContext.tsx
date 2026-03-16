@@ -6,8 +6,8 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, role: UserRole) => Promise<{ success: boolean; message?: string }>;
-  register: (name: string, email: string, password: string, role: UserRole) => Promise<boolean>;
+  login: (email: string, password: string, role?: UserRole) => Promise<{ success: boolean; message?: string; user?: User }>;
+  register: (name: string, email: string, password: string, role: UserRole, phone?: string, gender?: string) => Promise<boolean>;
   logout: () => void;
   updateUser: (updates: Partial<User>) => void;
 }
@@ -26,19 +26,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     api.get('/auth/me')
-      .then(({ data }) => setUser(data.user))
+      .then(({ data }) => {
+        setUser(data.user);
+        // Instant heartbeat on restore
+        api.patch('/users/heartbeat').catch(() => { });
+      })
       .catch(() => localStorage.removeItem('lms_token'))
       .finally(() => setIsLoading(false));
   }, []);
 
+  // ── Heartbeat System ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+
+    // Send heartbeat immediately on login/mount
+    api.patch('/users/heartbeat').catch(() => { });
+
+    const interval = setInterval(() => {
+      api.patch('/users/heartbeat').catch(() => { });
+    }, 30000); // every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [user?.id]);
+
   // ── Login ─────────────────────────────────────────────────────────────────
-  const login = useCallback(async (email: string, password: string, role: UserRole): Promise<{ success: boolean; message?: string }> => {
+  const login = useCallback(async (email: string, password: string, role?: UserRole): Promise<{ success: boolean; message?: string; user?: User }> => {
     setIsLoading(true);
     try {
       const { data } = await api.post('/auth/login', { email, password, role });
       localStorage.setItem('lms_token', data.token);
       setUser(data.user);
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (err: any) {
       const message = err.response?.data?.message || err.message;
       console.error('Login error:', message);
@@ -49,10 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Register ──────────────────────────────────────────────────────────────
-  const register = useCallback(async (name: string, email: string, password: string, role: UserRole): Promise<boolean> => {
+  const register = useCallback(async (name: string, email: string, password: string, role: UserRole, phone?: string, gender?: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const { data } = await api.post('/auth/register', { name, email, password, role });
+      const { data } = await api.post('/auth/register', { name, email, password, role, phone, gender });
       localStorage.setItem('lms_token', data.token);
       setUser(data.user);
       return true;
@@ -65,10 +83,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ── Logout ────────────────────────────────────────────────────────────────
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (user?.id) {
+      try {
+        await api.patch(`/users/${user.id}`, { isOnline: false });
+      } catch (err) {
+        console.error('Failed to notify offline status:', err);
+      }
+    }
     localStorage.removeItem('lms_token');
     setUser(null);
-  }, []);
+  }, [user]);
 
   // ── Update user locally (and optionally sync to API) ─────────────────────
   const updateUser = useCallback(async (updates: Partial<User>) => {

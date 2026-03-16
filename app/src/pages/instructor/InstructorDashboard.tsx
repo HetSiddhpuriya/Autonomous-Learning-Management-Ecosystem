@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { mockCourses, mockCourseAnalytics, mockUsers } from '@/mock/data';
+import api from '@/lib/api';
+import type { Course } from '@/types';
 import {
   BarChart,
   Bar,
@@ -37,8 +38,28 @@ import {
 
 export function InstructorDashboard() {
   const { user } = useAuth();
-  const myCourses = mockCourses.filter(c => c.instructorId === user?.id);
-  const analytics = mockCourseAnalytics[0];
+  const [myCourses, setMyCourses] = useState<Course[]>([]);
+  const [analytics, setAnalytics] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [coursesRes, analyticsRes] = await Promise.all([
+          api.get('/courses/all'),
+          api.get('/analytics/instructor')
+        ]);
+        setMyCourses(coursesRes.data);
+        setAnalytics(analyticsRes.data);
+      } catch (err) {
+        console.error('Failed to fetch instructor dashboard data:', err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const totalStudents = analytics.reduce((acc, a) => acc + (a.totalStudents || 0), 0) || myCourses.reduce((acc, c) => acc + (c.enrolledStudents || 0), 0);
+  const averageRating = myCourses.length ? myCourses.reduce((acc, c) => acc + (c.rating || 0), 0) / myCourses.length : 0;
+  const overallAvgCompletion = analytics.length ? Math.round(analytics.reduce((acc, a) => acc + (a.averageCompletion || 0), 0) / analytics.length) : 0;
 
   // Mock data for charts
   const performanceData = [
@@ -56,15 +77,12 @@ export function InstructorDashboard() {
     { range: 'Below 60', count: 15 },
   ];
 
-  const dropOffData = analytics?.dropOffLessons.map(d => ({
+  const dropOffData = analytics[0]?.dropOffLessons?.map((d: any) => ({
     lesson: `Lesson ${d.lessonId.slice(1)}`,
     rate: d.dropOffRate,
   })) || [];
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#6b7280'];
-
-  const totalStudents = myCourses.reduce((acc, c) => acc + c.enrolledStudents, 0);
-  const averageRating = myCourses.reduce((acc, c) => acc + c.rating, 0) / myCourses.length;
 
   return (
     <div className="space-y-8">
@@ -116,7 +134,7 @@ export function InstructorDashboard() {
         />
         <StatCard
           title="Avg. Completion"
-          value={`${analytics?.averageCompletion || 0}%`}
+          value={`${overallAvgCompletion}%`}
           change={3}
           trend="up"
           icon={TrendingUp}
@@ -256,18 +274,22 @@ export function InstructorDashboard() {
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Completion</span>
-                      <span className="font-medium">{analytics?.averageCompletion || 0}%</span>
+                      <span className="font-medium">{analytics.find(a => a.courseId === course.id)?.averageCompletion || 0}%</span>
                     </div>
-                    <Progress value={analytics?.averageCompletion || 0} className="h-2" />
+                    <Progress value={analytics.find(a => a.courseId === course.id)?.averageCompletion || 0} className="h-2" />
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Eye className="h-4 w-4 mr-1" />
-                      View
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link to={`/courses/${course.id || (course as any)._id}`}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Link>
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1">
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
+                    <Button asChild variant="outline" size="sm" className="flex-1">
+                      <Link to={`/instructor/edit-course/${course.id || (course as any)._id}`}>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Edit
+                      </Link>
                     </Button>
                   </div>
                 </CardContent>

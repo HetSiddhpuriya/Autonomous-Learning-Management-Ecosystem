@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Clock, Users, Star, BookOpen, Play } from 'lucide-react';
+import { Clock, Users, Star, BookOpen, Play, Award, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CourseCardProps {
@@ -16,6 +16,7 @@ interface CourseCardProps {
   delay?: number;
   onContinue?: () => void;
   onEnroll?: () => void;
+  onCertificate?: () => void;
 }
 
 export function CourseCard({
@@ -27,6 +28,7 @@ export function CourseCard({
   delay = 0,
   onContinue,
   onEnroll,
+  onCertificate,
 }: CourseCardProps) {
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -79,10 +81,10 @@ export function CourseCard({
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-2">{course.description}</p>
                 </div>
                 <div className="flex items-center justify-between mt-4">
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <BookOpen className="h-4 w-4" />
-                      {course.lessonsCount} lessons
+                      {course.lessonsCount}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
@@ -90,18 +92,44 @@ export function CourseCard({
                     </span>
                   </div>
                   {showActions && (
-                    <Button size="sm" onClick={onContinue || onEnroll}>
-                      {showProgress ? 'Continue' : 'Enroll'}
-                    </Button>
+                    showProgress ? (
+                      <Button size="icon" className="rounded-full shadow-md shrink-0" onClick={onContinue}>
+                        <Play className="h-4 w-4 ml-0.5 fill-current" />
+                      </Button>
+                    ) : (
+                      <Button size="sm" onClick={onEnroll}>
+                        Enroll
+                      </Button>
+                    )
                   )}
                 </div>
-                {showProgress && progress > 0 && (
+                {showProgress && progress >= 0 && progress < 100 && (
                   <div className="mt-3">
                     <div className="flex justify-between text-sm mb-1">
                       <span className="text-muted-foreground">Progress</span>
                       <span className="font-medium">{progress}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
+                  </div>
+                )}
+                {showProgress && progress >= 100 && (
+                  <div className="mt-3 flex items-center justify-between">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Completed
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onCertificate) onCertificate();
+                      }}
+                    >
+                      <Award className="h-4 w-4 mr-1.5" />
+                      Certificate
+                    </Button>
                   </div>
                 )}
               </div>
@@ -129,8 +157,8 @@ export function CourseCard({
             {course.difficulty}
           </Badge>
           {course.price && (
-            <Badge variant="secondary" className="absolute top-3 right-3 font-semibold">
-              ${course.price}
+            <Badge variant="secondary" className="absolute top-3 right-3 font-semibold bg-white/90 backdrop-blur-sm text-slate-800">
+              ₹{course.price.toLocaleString('en-IN')}
             </Badge>
           )}
         </div>
@@ -144,29 +172,42 @@ export function CourseCard({
               <span className="text-sm font-medium">{course.rating}</span>
             </div>
           </div>
-          
+
           <h3 className="font-semibold text-lg line-clamp-2 mb-1 group-hover:text-primary transition-colors">
             {course.title}
           </h3>
           <p className="text-sm text-muted-foreground mb-3">{course.instructorName}</p>
-          
-          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-            <span className="flex items-center gap-1">
-              <BookOpen className="h-4 w-4" />
-              {course.lessonsCount}
-            </span>
-            <span className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              {formatDuration(course.duration)}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" />
-              {course.enrolledStudents.toLocaleString()}
-            </span>
+
+          <div className="flex items-center justify-between mt-auto pt-2">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <BookOpen className="h-4 w-4" />
+                {course.lessonsCount}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                {formatDuration(course.duration)}
+              </span>
+              {!showProgress && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-4 w-4" />
+                  {course.enrolledStudents?.toLocaleString() || 0}
+                </span>
+              )}
+            </div>
+            {showActions && showProgress && (
+              <Button
+                size="icon"
+                className="rounded-full shadow-lg h-10 w-10 shrink-0 bg-primary hover:bg-primary/90 transition-transform hover:scale-105"
+                onClick={onContinue}
+              >
+                <Play className="h-5 w-5 ml-0.5 fill-current" />
+              </Button>
+            )}
           </div>
 
-          {showProgress && progress > 0 && (
-            <div className="mb-4">
+          {showProgress && progress >= 0 && progress < 100 && (
+            <div className="mt-4">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-muted-foreground">Progress</span>
                 <span className="font-medium">{progress}%</span>
@@ -174,21 +215,34 @@ export function CourseCard({
               <Progress value={progress} className="h-2" />
             </div>
           )}
+          {showProgress && progress >= 100 && (
+            <div className="mt-4 flex items-center justify-between">
+              <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+                <CheckCircle2 className="w-3 h-3 mr-1" />
+                Completed
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-green-200 text-green-700 hover:bg-green-50 hover:text-green-800 dark:border-green-900/50 dark:text-green-400 dark:hover:bg-green-900/20 h-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onCertificate) onCertificate();
+                }}
+              >
+                <Award className="h-4 w-4 mr-1.5" />
+                Certificate
+              </Button>
+            </div>
+          )}
 
-          {showActions && (
-            <Button 
-              className="w-full" 
-              variant={showProgress && progress > 0 ? 'default' : 'outline'}
-              onClick={onContinue || onEnroll}
+          {showActions && !showProgress && (
+            <Button
+              className="w-full mt-4"
+              variant="outline"
+              onClick={onEnroll}
             >
-              {showProgress && progress > 0 ? (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Continue Learning
-                </>
-              ) : (
-                'Enroll Now'
-              )}
+              Enroll Now
             </Button>
           )}
         </CardContent>

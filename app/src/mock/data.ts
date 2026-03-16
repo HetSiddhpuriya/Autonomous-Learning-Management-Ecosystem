@@ -11,6 +11,8 @@ export const mockUsers: User[] = [
     createdAt: '2024-01-15T10:00:00Z',
     lastActive: '2024-02-18T08:30:00Z',
     isActive: true,
+    isOnline: false,
+    status: 'approved',
   },
   {
     id: '2',
@@ -21,6 +23,8 @@ export const mockUsers: User[] = [
     createdAt: '2023-08-20T14:00:00Z',
     lastActive: '2024-02-18T09:15:00Z',
     isActive: true,
+    isOnline: false,
+    status: 'approved',
   },
   {
     id: '3',
@@ -31,6 +35,8 @@ export const mockUsers: User[] = [
     createdAt: '2023-06-10T09:00:00Z',
     lastActive: '2024-02-18T10:00:00Z',
     isActive: true,
+    isOnline: false,
+    status: 'approved',
   },
   {
     id: '4',
@@ -41,6 +47,8 @@ export const mockUsers: User[] = [
     createdAt: '2024-01-20T11:30:00Z',
     lastActive: '2024-02-17T16:45:00Z',
     isActive: true,
+    isOnline: false,
+    status: 'approved',
   },
   {
     id: '5',
@@ -51,6 +59,8 @@ export const mockUsers: User[] = [
     createdAt: '2023-10-05T13:20:00Z',
     lastActive: '2024-02-18T07:50:00Z',
     isActive: true,
+    isOnline: false,
+    status: 'approved',
   },
 ];
 
@@ -72,7 +82,7 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     isPublished: true,
     createdAt: '2023-09-15T10:00:00Z',
-    price: 89.99,
+    price: 4999,
   },
   {
     id: 'c2',
@@ -90,7 +100,7 @@ export const mockCourses: Course[] = [
     rating: 4.9,
     isPublished: true,
     createdAt: '2023-11-01T14:30:00Z',
-    price: 79.99,
+    price: 3999,
   },
   {
     id: 'c3',
@@ -108,7 +118,7 @@ export const mockCourses: Course[] = [
     rating: 4.7,
     isPublished: true,
     createdAt: '2023-08-10T09:00:00Z',
-    price: 69.99,
+    price: 2999,
   },
   {
     id: 'c4',
@@ -126,7 +136,7 @@ export const mockCourses: Course[] = [
     rating: 4.6,
     isPublished: true,
     createdAt: '2023-12-01T11:00:00Z',
-    price: 59.99,
+    price: 1999,
   },
   {
     id: 'c5',
@@ -144,7 +154,7 @@ export const mockCourses: Course[] = [
     rating: 4.8,
     isPublished: true,
     createdAt: '2024-01-10T10:30:00Z',
-    price: 99.99,
+    price: 5999,
   },
   {
     id: 'c6',
@@ -162,7 +172,7 @@ export const mockCourses: Course[] = [
     rating: 4.5,
     isPublished: false,
     createdAt: '2024-02-01T09:00:00Z',
-    price: 74.99,
+    price: 4500,
   },
 ];
 
