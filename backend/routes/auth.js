@@ -2,7 +2,9 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
+import OTP from '../models/OTP.js';
 import passport from '../config/passport.js';
+import { sendOTPEmail } from '../utils/sendEmail.js';
 
 const router = express.Router();
 
@@ -46,6 +48,56 @@ router.post('/register', async (req, res) => {
         res.status(201).json({ token, user });
     } catch (err) {
         res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /api/auth/send-otp
+router.post('/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: 'Email is required' });
+        }
+
+        // Generate a 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Remove any existing OTP for this email
+        await OTP.deleteMany({ email });
+
+        // Create new OTP
+        await OTP.create({ email, otp });
+
+        // Send OTP email
+        await sendOTPEmail(email, otp);
+
+        res.status(200).json({ message: 'OTP sent successfully' });
+    } catch (err) {
+        console.error('Error sending OTP:', err);
+        res.status(500).json({ message: 'Failed to send OTP' });
+    }
+});
+
+// POST /api/auth/verify-otp
+router.post('/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and OTP are required' });
+        }
+
+        const otpRecord = await OTP.findOne({ email, otp });
+        if (!otpRecord) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        // If valid, delete the OTP record so it can't be reused
+        await OTP.deleteOne({ _id: otpRecord._id });
+
+        res.status(200).json({ message: 'Email verified successfully' });
+    } catch (err) {
+        console.error('Error verifying OTP:', err);
+        res.status(500).json({ message: 'Failed to verify OTP' });
     }
 });
 
