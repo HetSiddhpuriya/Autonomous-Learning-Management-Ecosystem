@@ -5,7 +5,9 @@ const discussionSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     userName: { type: String, required: true },
     userAvatar: { type: String, default: '' },
-    message: { type: String, required: true },
+    message: { type: String }, // optional because they might just send an attachment
+    attachmentUrl: { type: String, default: null },
+    attachmentName: { type: String, default: null },
     parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Discussion', default: null },
 }, { timestamps: true });
 
@@ -16,6 +18,7 @@ discussionSchema.set('toJSON', {
         ret.userId = ret.userId?.toString();
         ret.timestamp = ret.createdAt?.toISOString();
         ret.parentId = ret.parentId?.toString() || null;
+        if (!ret.message) ret.message = ''; // Fallback for UI 
         delete ret._id;
         delete ret.__v;
         delete ret.createdAt;

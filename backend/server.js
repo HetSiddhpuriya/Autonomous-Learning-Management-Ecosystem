@@ -19,8 +19,25 @@ import practiceRoutes from './routes/practice.js';
 import aiRoutes from './routes/ai.js';
 import path from 'path';
 import passport from './config/passport.js';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import setupDiscussionSockets from './sockets/discussionSocket.js';
 
 const app = express();
+const httpServer = createServer(app);
+
+// Initialize Socket.io
+const io = new Server(httpServer, {
+    cors: {
+        origin: ['http://localhost:5173', 'http://localhost:3000'],
+        credentials: true,
+    }
+});
+
+// Setup socket handlers and capture the exported functions (like getOnlineUsers)
+const socketManager = setupDiscussionSockets(io);
+app.set('socketManager', socketManager); // Make it available to routes
+
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/lms';
 
@@ -68,7 +85,7 @@ app.use((err, _req, res, _next) => {
 mongoose.connect(MONGO_URI)
   .then(() => {
     console.log(`✅ MongoDB connected: ${MONGO_URI}`);
-    app.listen(PORT, () => {
+    httpServer.listen(PORT, () => {
       console.log(`🚀 LMS API Server running on http://localhost:${PORT}`);
       console.log(`📋 Health check: http://localhost:${PORT}/api/health`);
     });

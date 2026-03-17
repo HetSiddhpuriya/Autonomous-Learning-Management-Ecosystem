@@ -118,6 +118,8 @@ export interface DiscussionMessage {
   userName: string;
   userAvatar?: string;
   message: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
   timestamp: string;
   replies?: DiscussionMessage[];
 }

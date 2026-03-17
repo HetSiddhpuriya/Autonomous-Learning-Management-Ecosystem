@@ -45,4 +45,24 @@ router.post('/', protect, authorize('instructor', 'admin'), upload.single('video
     }
 });
 
+// POST /api/upload/attachment
+router.post('/attachment', protect, upload.single('file'), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        
+        const fileUrl = `/uploads/${req.file.filename}`;
+        
+        res.status(200).json({ 
+            url: fileUrl, 
+            name: req.file.originalname,
+            size: req.file.size
+        });
+    } catch (err) {
+        console.error('Attachment upload error:', err);
+        res.status(500).json({ message: 'Internal server error during attachment upload' });
+    }
+});
+
 export default router;
