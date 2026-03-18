@@ -17,6 +17,7 @@ import notificationRoutes from './routes/notifications.js';
 import uploadRoutes from './routes/upload.js';
 import practiceRoutes from './routes/practice.js';
 import aiRoutes from './routes/ai.js';
+import recommendationRoutes from './routes/recommendations.js';
 import path from 'path';
 import passport from './config/passport.js';
 import { createServer } from 'http';
@@ -74,6 +75,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/practice', practiceRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // ─── Global Error Handler ────────────────────────────────────────────────────
 app.use((err, _req, res, _next) => {
