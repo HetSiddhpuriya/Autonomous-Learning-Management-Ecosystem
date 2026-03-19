@@ -73,7 +73,8 @@ export function DiscussionsPage() {
     // 2. Setup socket connection
     useEffect(() => {
         const token = localStorage.getItem('token');
-        const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+        const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '');
+        const newSocket = io(baseUrl, {
             auth: { token }
         });
         setSocket(newSocket);
@@ -356,9 +357,10 @@ export function DiscussionsPage() {
                                                                 >
                                                                     {message.attachmentUrl && (
                                                                         <a 
-                                                                            href={`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${message.attachmentUrl}`} 
+                                                                            href={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '')}${message.attachmentUrl}`} 
                                                                             target="_blank" 
                                                                             rel="noopener noreferrer"
+                                                                            download={message.attachmentName || 'attachment'}
                                                                             className="flex items-center gap-2 mb-2 p-2 bg-black/10 dark:bg-white/10 rounded-md hover:bg-black/20 dark:hover:bg-white/20 transition-colors"
                                                                         >
                                                                             <FileText className="h-4 w-4 shrink-0" />

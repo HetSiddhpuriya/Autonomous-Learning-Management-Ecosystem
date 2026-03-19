@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import api from '@/lib/api';
 import {
   Search,
@@ -41,8 +47,10 @@ export function StudentsPage() {
   );
 
   const getStudentProgress = (studentId: string) => {
-    // In a real app we'd fetch this student's progress either inside the student payload or via another API call
-    return Math.floor(Math.random() * 100);
+    // Generates a stable simulated progress value based on student ID to prevent layout shifting
+    if (!studentId) return 0;
+    const hash = studentId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return Math.abs(hash * 37) % 100;
   };
 
   return (
@@ -152,15 +160,35 @@ export function StudentsPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => setSelectedStudent(student)}
+                            title="View Performance"
                           >
                             <BarChart3 className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => window.location.href = `mailto:${student.email}`}
+                            title="Email Student"
+                          >
                             <Mail className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedStudent(student)}>
+                                <BarChart3 className="h-4 w-4 mr-2" />
+                                View Performance
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.location.href = `mailto:${student.email}`}>
+                                <Mail className="h-4 w-4 mr-2" />
+                                Email Student
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </td>
                     </motion.tr>
