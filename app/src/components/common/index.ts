@@ -8,3 +8,4 @@ export { LessonCard } from './LessonCard';
 export { QuizQuestion } from './QuizQuestion';
 export { ProgressRing } from './ProgressRing';
 export { RoleBadge } from './RoleBadge';
+export { RatingModal } from './RatingModal';

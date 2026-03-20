@@ -8,6 +8,7 @@ const enrollmentSchema = new mongoose.Schema({
     paymentMethod: { type: String },
     amount: { type: Number },
     status: { type: String, default: 'completed' },
+    rating: { type: Number },
 }, { timestamps: true });
 
 enrollmentSchema.index({ studentId: 1, courseId: 1 }, { unique: true });

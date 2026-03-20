@@ -41,6 +41,7 @@ export interface Course {
   isPublished: boolean;
   createdAt: string;
   price?: number;
+  userRating?: number;
 }
 
 export interface Lesson {

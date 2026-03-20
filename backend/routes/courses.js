@@ -240,7 +240,14 @@ router.post('/:id/enroll', protect, authorize('student'), async (req, res) => {
 router.get('/enrolled/my', protect, authorize('student'), async (req, res) => {
     try {
         const enrollments = await Enrollment.find({ studentId: req.user._id }).populate('courseId');
-        const courses = enrollments.map(e => e.courseId);
+        const courses = enrollments.map(e => {
+            const courseObj = e.courseId.toObject ? e.courseId.toObject() : e.courseId;
+            return {
+                ...courseObj,
+                userRating: e.rating, // Include the student's specific rating
+                id: e.courseId._id.toString()
+            };
+        });
         res.json(courses);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -288,6 +295,37 @@ router.get('/transactions/my', protect, authorize('student'), async (req, res) =
             .sort({ enrolledAt: -1 });
         console.log("TRANSACTIONS: ", JSON.stringify(transactions, null, 2));
         res.json(transactions);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// POST /api/courses/:id/rating - Rate a course
+router.post('/:id/rating', protect, authorize('student'), async (req, res) => {
+    try {
+        const { rating } = req.body;
+        if (!rating || rating < 1 || rating > 5) {
+            return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+        }
+
+        const courseId = req.params.id;
+        const enrollment = await Enrollment.findOne({ studentId: req.user._id, courseId });
+        
+        if (!enrollment) {
+            return res.status(400).json({ message: 'You must be enrolled to rate this course' });
+        }
+
+        enrollment.rating = rating;
+        await enrollment.save();
+
+        // Calculate new average rating for the course
+        const allRatings = await Enrollment.find({ courseId, rating: { $exists: true, $ne: null } });
+        const totalRating = allRatings.reduce((sum, enr) => sum + enr.rating, 0);
+        const averageRating = allRatings.length > 0 ? (totalRating / allRatings.length).toFixed(1) : 0;
+
+        await Course.findByIdAndUpdate(courseId, { rating: averageRating });
+
+        res.json({ message: 'Course rated successfully', rating: averageRating });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

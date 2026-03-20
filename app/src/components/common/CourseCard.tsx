@@ -17,6 +17,7 @@ interface CourseCardProps {
   onContinue?: () => void;
   onEnroll?: () => void;
   onCertificate?: () => void;
+  onRate?: () => void;
 }
 
 export function CourseCard({
@@ -29,6 +30,7 @@ export function CourseCard({
   onContinue,
   onEnroll,
   onCertificate,
+  onRate,
 }: CourseCardProps) {
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -114,10 +116,31 @@ export function CourseCard({
                 )}
                 {showProgress && progress >= 100 && (
                   <div className="mt-3 flex items-center justify-between">
-                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
-                      <CheckCircle2 className="w-3 h-3 mr-1" />
-                      Completed
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
+                        <CheckCircle2 className="w-3 h-3 mr-1" />
+                        Completed
+                      </Badge>
+                      {course.userRating ? (
+                        <div className="flex items-center gap-1 text-amber-500 bg-amber-50 dark:bg-amber-900/10 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-900/20">
+                          <Star className="w-3 h-3 fill-current" />
+                          <span className="text-xs font-semibold">{course.userRating}</span>
+                        </div>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 h-8 px-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onRate) onRate();
+                          }}
+                        >
+                          <Star className="h-3.5 w-3.5 mr-1" />
+                          Rate
+                        </Button>
+                      )}
+                    </div>
                     <Button
                       size="sm"
                       variant="outline"
@@ -217,10 +240,31 @@ export function CourseCard({
           )}
           {showProgress && progress >= 100 && (
             <div className="mt-4 flex items-center justify-between">
-              <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400">
-                <CheckCircle2 className="w-3 h-3 mr-1" />
-                Completed
-              </Badge>
+              <div className="flex flex-col gap-2">
+                <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 w-fit">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Completed
+                </Badge>
+                {course.userRating ? (
+                  <div className="flex items-center gap-1 text-amber-500 bg-amber-50 dark:bg-amber-900/10 px-2 py-0.5 rounded-md border border-amber-100 dark:border-amber-900/20 w-fit">
+                    <Star className="w-3 h-3 fill-current" />
+                    <span className="text-xs font-semibold">Rated {course.userRating} / 5</span>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 h-7 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (onRate) onRate();
+                    }}
+                  >
+                    <Star className="h-3.5 w-3.5 mr-1" />
+                    Rate Course
+                  </Button>
+                )}
+              </div>
               <Button
                 size="sm"
                 variant="outline"

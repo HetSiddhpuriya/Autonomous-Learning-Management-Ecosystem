@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import type { Course } from '@/types';
 import { useAuth } from '@/context';
 import { CertificateModal } from '@/components/common/CertificateModal';
+import { RatingModal } from '@/components/common/RatingModal';
 
 export function MyCoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -19,6 +20,7 @@ export function MyCoursesPage() {
   const [activeTab, setActiveTab] = useState('all');
   const { user } = useAuth();
   const [selectedCertificateCourse, setSelectedCertificateCourse] = useState<Course | null>(null);
+  const [selectedRatingCourse, setSelectedRatingCourse] = useState<Course | null>(null);
 
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,14 @@ export function MyCoursesPage() {
       toast.error('Failed to load your courses');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRatingSuccess = (newRating: number) => {
+    if (selectedRatingCourse) {
+      setEnrolledCourses(prev => prev.map(c => 
+        c.id === selectedRatingCourse.id ? { ...c, userRating: newRating } : c
+      ));
     }
   };
 
@@ -205,6 +215,7 @@ export function MyCoursesPage() {
                       delay={index * 0.1}
                       onContinue={() => handleContinue(course.id)}
                       onCertificate={() => setSelectedCertificateCourse(course)}
+                      onRate={() => setSelectedRatingCourse(course)}
                     />
                   );
                 })}
@@ -237,6 +248,13 @@ export function MyCoursesPage() {
         onClose={() => setSelectedCertificateCourse(null)}
         course={selectedCertificateCourse}
         studentName={user?.name || 'Student'}
+      />
+      {/* Rating Modal */}
+      <RatingModal
+        isOpen={!!selectedRatingCourse}
+        onClose={() => setSelectedRatingCourse(null)}
+        course={selectedRatingCourse}
+        onSuccess={handleRatingSuccess}
       />
     </div>
   );
